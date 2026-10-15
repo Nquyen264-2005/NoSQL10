@@ -1,0 +1,43 @@
+{
+  "status": "CASSANDRA_OFFLINE",
+  "executed_at": "2026-10-14T13:03:02.858Z",
+  "error": "Cassandra client returned false on connection attempt.",
+  "message": "Performance benchmark requires an active Cassandra cluster. Per specification, NO fake or simulated numbers were generated.",
+  "how_to_run": [
+    "1. Start Docker Desktop on Windows",
+    "2. Run: docker compose up -d",
+    "3. Run: npm run test:perf"
+  ],
+  "test_cases": [
+    {
+      "test_id": "PT-01",
+      "description": "Insert 100 logs (Triple-table query-first write)",
+      "target_records": 100
+    },
+    {
+      "test_id": "PT-02",
+      "description": "Insert 300 logs (Triple-table query-first write)",
+      "target_records": 300
+    },
+    {
+      "test_id": "PT-03",
+      "description": "Insert 500 logs (Triple-table query-first write)",
+      "target_records": 500
+    },
+    {
+      "test_id": "PT-04",
+      "description": "Query Service + Date (Table: audit_logs)",
+      "target_iterations": 50
+    },
+    {
+      "test_id": "PT-05",
+      "description": "Query Service + Level + Date (Table: audit_logs_by_service_level)",
+      "target_iterations": 50
+    },
+    {
+      "test_id": "PT-06",
+      "description": "Query Time Range Slice (Zero ALLOW FILTERING)",
+      "target_iterations": 50
+    }
+  ]
+}

@@ -1,0 +1,2497 @@
+BỘ CÔNG THƯƠNGTRƯỜNG ĐẠI HỌC CÔNG THƯƠNG TP. HCMKHOA CÔNG NGHỆ THÔNG TIN
+DỮ LIỆU NOSQLĐỀ TÀI 10: HỆ THỐNG GIÁM SÁT AUDIT LOG VÀ LỊCH SỬ THAO TÁC
+GIẢNG VIÊN HƯỚNG DẪN:ThS. Trần Quang BìnhNhóm 07NHÓM SINH VIÊN THỰC HIỆN:Nguyễn Hữu Lộc - 2001230468Nguyễn Thị Quyên - 2001230745Dương Chí Khải - 2001230364
+TP. HỒ CHÍ MINH, THÁNG 10 NĂM 2026
+MỤC LỤC
+CHƯƠNG 1: GIỚI THIỆUCHƯƠNG 2: MÔ TẢ TỔNG QUAN HỆ THỐNGCHƯƠNG 3: YÊU CẦU CHỨC NĂNGCHƯƠNG 4: ĐẶC TẢ USE CASECHƯƠNG 5: THIẾT KẾ DỮ LIỆU APACHE CASSANDRACHƯƠNG 6: ĐẶC TẢ GIAO DIỆN VÀ APICHƯƠNG 7: YÊU CẦU GIAO DIỆNCHƯƠNG 8: YÊU CẦU PHI CHỨC NĂNG VÀ QUY TẮC NGHIỆP VỤCHƯƠNG 9: KIỂM THỬ VÀ TIÊU CHÍ NGHIỆM THUCHƯƠNG 10: MA TRẬN TRUY VẾT VÀ PRODUCT BACKLOGCHƯƠNG 11: TRIỂN KHAI, DỮ LIỆU MẪU VÀ KỊCH BẢN DEMOCHƯƠNG 12: RỦI RO, GIỚI HẠN VÀ HƯỚNG PHÁT TRIỂNCHƯƠNG 13: BỔ SUNG HOÀN THIỆN THEO BAREM ĐỀ TÀICHƯƠNG 14: BỔ SUNG YÊU CẦU KỸ THUẬT VÀ KIỂM SOÁT CHẤT LƯỢNGCHƯƠNG 15: HOÀN THIỆN ĐẶC TẢ VÀ HỒ SƠ NGHIỆM THUCHƯƠNG 16: BỔ SUNG NỘI DUNG VẬN HÀNH VÀ QUẢN TRỊ AUDIT LOGCHƯƠNG 17: PHÂN CÔNG, SẢN PHẨM BÀN GIAO VÀ QUẢN LÝ THAY ĐỔIKẾT LUẬNPHỤ LỤC A: MẪU CQL PHỤC VỤ DEMOPHỤ LỤC B: MẪU JSON APITÀI LIỆU THAM KHẢO
+DANH MỤC HÌNH
+Hình 2.1. Kiến trúc tổng thể hệ thống Audit Log
+Hình 5.1. Luồng ghi Audit Log tự động
+Hình 11.1. Kịch bản demo tổng thể
+Hình 13.1. Kiến trúc tổng thể hệ thống Audit Log
+Hình 13.2. Mô hình dữ liệu Cassandra theo Query-First
+Hình 13.3. Use Case Diagram - Hệ thống Audit Log
+Hình 13.4. Sequence Diagram - Tự động ghi Audit Log
+Hình 13.5. Sequence Diagram - Lọc Audit Log
+Hình 13.6. Sequence Diagram - Demo TTL
+Hình 13.7. Activity Diagram - Tự động ghi Audit Log
+Hình 13.8. Deployment Diagram - Môi trường demo
+DANH MỤC BẢNG
+Bảng 1.1. Đối tượng sử dụng và quyền/chức năng chính
+Bảng 1.2. Thuật ngữ và từ viết tắt
+Bảng 2.1. Kiến trúc ba tầng và trách nhiệm của từng thành phần
+Bảng 2.2. Danh sách các module chính của hệ thống
+Bảng 2.3. Tác nhân và phân quyền trong hệ thống
+Bảng 3.1. Danh sách yêu cầu chức năng của hệ thống
+Bảng 3.2. Quy định dữ liệu đầu vào của Audit Log
+Bảng 3.3. Danh sách Action chuẩn theo từng Service
+Bảng 4.1. Đặc tả UC-01 - Đăng nhập Admin
+Bảng 4.2. Đặc tả UC-02 - Xem danh sách Audit Log
+Bảng 4.3. Đặc tả UC-03 - Lọc Audit Log
+Bảng 4.4. Đặc tả UC-04 - Xem chi tiết Audit Log
+Bảng 4.5. Đặc tả UC-05 - Thêm Service
+Bảng 4.6. Đặc tả UC-06 - Cập nhật Service
+Bảng 4.7. Đặc tả UC-07 - Xóa Service
+Bảng 4.8. Đặc tả UC-08 - Tự động ghi Audit Log
+Bảng 4.9. Đặc tả UC-09 - Ghi Audit Log có TTL
+Bảng 4.10. Đặc tả UC-10 - Kiểm tra TTL
+Bảng 4.11. Đặc tả UC-11 - Kiểm tra trạng thái Cassandra
+Bảng 5.1. Cấu trúc dữ liệu bảng audit_logs
+Bảng 5.2. Cấu trúc dữ liệu bảng audit_logs_by_service_level
+Bảng 5.3. Cấu trúc dữ liệu bảng services
+Bảng 5.4. Danh mục truy vấn CQL bắt buộc
+Bảng 6.1. Danh sách REST API của hệ thống
+Bảng 6.2. Quy tắc validate và xử lý lỗi API
+Bảng 8.1. Yêu cầu phi chức năng của hệ thống
+Bảng 8.2. Quy tắc nghiệp vụ của hệ thống Audit Log
+Bảng 9.1. Bộ Test Case chức năng và tích hợp
+Bảng 10.1. Ma trận truy vết yêu cầu
+Bảng 10.2. Quy ước mức độ ưu tiên MoSCoW
+Bảng 10.3. Product Backlog Sprint 1 - Nền tảng Cassandra và Backend
+Bảng 10.4. Product Backlog Sprint 2 - Query, TTL và dữ liệu mẫu
+Bảng 10.5. Product Backlog Sprint 3 - Dashboard, tích hợp và kiểm thử
+Bảng 11.1. Phân bổ 400 Audit Log mẫu theo Service và Level
+Bảng 12.1. Danh sách rủi ro và phương án giảm thiểu
+Bảng 13.1. Đối chiếu barem đánh giá với nội dung SRS và minh chứng
+Bảng 13.2. So sánh Apache Cassandra và CSDL quan hệ trong bài toán Audit Log
+Bảng 13.3. Phân tích lựa chọn Partition Key và Clustering Key
+Bảng 13.4. Danh mục truy vấn CQL cần minh chứng khi bảo vệ
+Bảng 13.5. Đặc tả CRUD Service và ánh xạ API - Frontend - Cassandra
+Bảng 13.6. Kế hoạch kiểm thử hiệu năng
+Bảng 13.7. Mẫu ghi nhận kết quả kiểm thử hiệu năng
+Bảng 13.8. Quy tắc sinh dữ liệu mẫu Audit Log
+Bảng 13.9. Danh sách hình ảnh minh chứng cần bổ sung
+Bảng 13.10. Ma trận barem - minh chứng - người phụ trách
+Bảng 14.1. Chính sách lưu giữ dữ liệu và TTL theo nhóm dữ liệu
+Bảng 14.2. Chuẩn hóa API, input, response và lỗi chính
+Bảng 14.3. Quy tắc ánh xạ mức độ INFO, WARN và ERROR
+Bảng 14.4. Quy tắc kiểm tra chất lượng dữ liệu Audit Log
+Bảng 14.5. Tiêu chí phi chức năng có thể đo được
+Bảng 14.6. Danh sách Test Case bổ sung
+Bảng 14.7. Cấu hình môi trường triển khai và demo
+Bảng 14.8. Ma trận kiểm tra độ đầy đủ cuối cùng
+Bảng 15.1. Lịch sử phiên bản tài liệu
+Bảng 15.2. Ma trận truy vết đầy đủ yêu cầu chức năng
+Bảng 15.3. Từ điển dữ liệu Audit Log
+Bảng 15.4. Từ điển dữ liệu Service
+Bảng 15.5. Kịch bản và chỉ số đo hiệu năng
+Bảng 15.6. Runbook cài đặt, khởi động và phục hồi demo
+Bảng 15.7. Checklist minh chứng nghiệm thu
+Bảng 15.8. Đối chiếu cuối với yêu cầu chính thức của Đề tài 10
+Bảng 6.3. Yêu cầu giao tiếp ngoài hệ thống
+Bảng 9.2. Chiến lược kiểm thử và bằng chứng
+Bảng 17.1. Phân công vai trò và nội dung demo
+Bảng 17.2. Danh sách sản phẩm bàn giao
+Bảng 17.3. Quy trình quản lý thay đổi yêu cầu
+CHƯƠNG 1: GIỚI THIỆU
+1.1. Mục đích tài liệu
+Tài liệu đặc tả yêu cầu phần mềm (Software Requirements Specification - SRS) mô tả đầy đủ yêu cầu đối với Hệ thống giám sát Audit Log và lịch sử thao tác hệ thống sử dụng Apache Cassandra. Tài liệu là cơ sở thống nhất giữa nhóm phát triển, người kiểm thử và giảng viên trong việc xác định phạm vi, chức năng, dữ liệu, giao diện, tiêu chí kiểm thử và tiêu chí nghiệm thu.
+Phân tích và thiết kế hệ thống.
+Thiết kế cơ sở dữ liệu Apache Cassandra theo hướng Query-First.
+Xây dựng Backend và REST API.
+Xây dựng Web Dashboard cho quản trị viên.
+Thực hiện kiểm thử chức năng, TTL và kết nối Cassandra.
+Chuẩn bị dữ liệu mẫu, báo cáo, slide và kịch bản demo.
+Trong các hệ thống phần mềm, nhiều thao tác như đăng nhập, tạo tài khoản, cập nhật dữ liệu, tạo đơn hàng hoặc thanh toán cần được ghi nhận để phục vụ truy vết, kiểm tra lỗi và giám sát vận hành. Khi số lượng sự kiện tăng nhanh, việc lưu trữ tập trung bằng mô hình dữ liệu có khả năng ghi lớn và mở rộng ngang trở nên cần thiết. Apache Cassandra được lựa chọn vì phù hợp với dữ liệu log phát sinh liên tục, hỗ trợ phân tán, TTL và truy vấn hiệu quả khi mô hình dữ liệu được thiết kế theo nhu cầu truy vấn.
+Bài toán của đề tài không chỉ dừng ở việc lưu log mà còn yêu cầu hình thành một luồng hoàn chỉnh từ phát sinh sự kiện, tạo Audit Log, ghi vào Cassandra, tra cứu bằng CQL/API, hiển thị trên Dashboard, kiểm tra TTL và cung cấp bằng chứng vận hành thông qua CQLSH và nodetool status.
+Vì vậy, đề tài xây dựng một hệ thống Audit Log tập trung để tiếp nhận và lưu trữ lịch sử thao tác từ nhiều dịch vụ. Đặc trưng của dữ liệu log là phát sinh liên tục, thiên về ghi, tăng nhanh theo thời gian và thường được truy vấn theo dịch vụ, mức độ nghiêm trọng và khoảng thời gian. Apache Cassandra phù hợp với mô hình này nhờ khả năng ghi tốt, mở rộng ngang, phân vùng dữ liệu, thiết kế Query-First và hỗ trợ TTL trực tiếp trên dữ liệu.
+Trong các hệ thống phần mềm hiện đại, số lượng thao tác và sự kiện phát sinh liên tục từ nhiều module như xác thực, người dùng, đơn hàng và thanh toán. Khi xảy ra lỗi hoặc cần truy vết, quản trị viên phải xác định được sự kiện nào đã xảy ra, tại thời điểm nào, do ai thực hiện, thuộc dịch vụ nào và kết quả xử lý ra sao. Nếu các bản ghi này được lưu rời rạc tại từng dịch vụ thì việc tra cứu, đối soát và điều tra sự cố sẽ khó khăn.
+1.2. Bối cảnh bài toán
+1.3. Phạm vi hệ thống
+Hệ thống tiếp nhận, lưu trữ, tra cứu và theo dõi tập trung Audit Log của tối thiểu bốn nhóm dịch vụ: Auth, User, Order và Payment. Hệ thống hỗ trợ ba mức độ log INFO, WARN và ERROR; hỗ trợ tự động sinh log từ các thao tác nghiệp vụ; tra cứu theo dịch vụ, mức độ và khoảng thời gian; quản lý danh mục Service; hỗ trợ TTL; cung cấp Web Dashboard; và kiểm tra trạng thái Cassandra bằng CQLSH/nodetool.
+Phạm vi dữ liệu demo từ 300 đến 500 bản ghi, khuyến nghị khoảng 400 bản ghi để bảo đảm đủ dữ liệu cho truy vấn và trình diễn.
+1.4. Mục tiêu hệ thống
+Xây dựng kho Audit Log tập trung trên Cassandra.
+Áp dụng đúng tư duy Query-First, Partition Key và Clustering Key.
+Tự động tạo Audit Log khi xảy ra thao tác quan trọng.
+Tra cứu log theo Service, Level, ngày và khoảng thời gian.
+Minh họa cơ chế TTL bằng tình huống 30 giây.
+Xây dựng Dashboard dễ sử dụng để lọc và xem chi tiết log.
+Sinh tối thiểu 300-500 log mẫu từ bốn dịch vụ.
+Kiểm tra và chứng minh Cassandra hoạt động ổn định bằng CQLSH và nodetool status.
+1.5. Đối tượng sử dụng
+Bảng 1.1. Đối tượng sử dụng và quyền/chức năng chính
+Đối tượng
+Mô tả
+Quyền/chức năng chính
+Admin
+Người quản trị và theo dõi hệ thống
+Đăng nhập, xem Dashboard, lọc log, xem chi tiết log, quản lý Service
+Business Service
+Các module nghiệp vụ phát sinh log
+Gửi/tạo Audit Log thông qua Backend/API
+Developer/Tester
+Người triển khai và kiểm thử
+Chạy CQLSH, nodetool, TTL, truy vấn CQL và kiểm thử tích hợp
+1.6. Thuật ngữ và từ viết tắt
+Bảng 1.2. Thuật ngữ và từ viết tắt
+Thuật ngữ
+Ý nghĩa
+Audit Log
+Bản ghi lưu lịch sử thao tác hoặc sự kiện trong hệ thống
+Cassandra
+Hệ quản trị NoSQL phân tán dạng Wide Column/Column Family
+CQL
+Cassandra Query Language
+CQLSH
+Công cụ dòng lệnh thao tác Cassandra
+TTL
+Time To Live - thời gian tồn tại dữ liệu
+API
+Application Programming Interface
+REST API
+API theo phong cách REST
+Service
+Dịch vụ/module phát sinh Audit Log
+INFO
+Mức log thông tin
+WARN
+Mức log cảnh báo
+ERROR
+Mức log lỗi
+Partition Key
+Khóa xác định partition
+Clustering Key
+Khóa sắp xếp dữ liệu trong partition
+Query-First
+Thiết kế bảng dựa trên truy vấn cần phục vụ
+Dummy Data
+Dữ liệu giả dùng cho kiểm thử
+nodetool
+Công cụ quản trị và kiểm tra Cassandra
+CHƯƠNG 2: MÔ TẢ TỔNG QUAN HỆ THỐNG
+2.1. Kiến trúc tổng thể
+Hệ thống được tổ chức theo kiến trúc ba tầng: Frontend Dashboard, Backend/REST API và Apache Cassandra. Frontend không truy cập trực tiếp Cassandra; mọi truy vấn đều đi qua Backend để bảo đảm kiểm tra dữ liệu, thống nhất nghiệp vụ và tách biệt tầng giao diện với tầng lưu trữ.
+Bảng 2.1. Kiến trúc ba tầng và trách nhiệm của từng thành phần
+Tầng
+Thành phần
+Trách nhiệm
+Frontend
+Web Dashboard
+Hiển thị thống kê, danh sách log, bộ lọc, chi tiết log và giao diện quản lý Service
+Backend
+REST API
+Nhận request, validate, xử lý nghiệp vụ, tự tạo Audit Log, truy vấn/ghi Cassandra, trả response
+Database
+Apache Cassandra
+Lưu trữ Audit Log, Service, TTL và phục vụ truy vấn theo mẫu đã thiết kế
+2.2. Luồng hoạt động tổng quát
+Người dùng thực hiện thao tác trên hệ thống nghiệp vụ.
+Backend tiếp nhận và xử lý yêu cầu nghiệp vụ.
+Hệ thống xác định thao tác cần ghi Audit Log.
+Audit Log được tạo với service, level, action, thời gian, user và message.
+Backend ghi log vào một hoặc nhiều bảng Cassandra phục vụ truy vấn.
+Admin truy cập Dashboard và chọn điều kiện lọc.
+Frontend gọi REST API.
+Backend chọn truy vấn/bảng Cassandra phù hợp.
+Cassandra trả kết quả.
+Backend trả response và Dashboard hiển thị dữ liệu.
+2.3. Các module chính
+Bảng 2.2. Danh sách các module chính của hệ thống
+Mã
+Module
+Chức năng
+M01
+Quản lý Audit Log
+Ghi, tra cứu, lọc, xem chi tiết và TTL
+M02
+Quản lý Service
+Thêm, xem, sửa, xóa, bật/tắt trạng thái theo dõi
+M03
+Dashboard
+Thống kê tổng quan, danh sách log, bộ lọc và chi tiết
+M04
+Auto Audit Log
+Tự ghi log khi đăng nhập, CRUD, tạo đơn, thanh toán
+M05
+Cassandra Administration
+CQLSH, nodetool status, truy vấn và kiểm tra TTL
+2.4. Tác nhân và phân quyền
+Bảng 2.3. Tác nhân và phân quyền trong hệ thống
+Mã Actor
+Actor
+Quyền hạn
+ACT-01
+Admin
+Xem Dashboard, xem/lọc log, xem chi tiết, CRUD Service
+ACT-02
+Auth Service
+Phát sinh LOGIN, LOGIN_SUCCESS, LOGIN_FAILED, LOGOUT, RESET_PASSWORD
+ACT-03
+User Service
+Phát sinh CREATE_USER, UPDATE_USER, DELETE_USER, VIEW_USER
+ACT-04
+Order Service
+Phát sinh CREATE_ORDER, UPDATE_ORDER, CANCEL_ORDER, DELETE_ORDER
+ACT-05
+Payment Service
+Phát sinh CREATE_PAYMENT, PAYMENT_SUCCESS, PAYMENT_FAILED, REFUND
+ACT-06
+Developer/Tester
+Kiểm tra CQLSH, TTL, truy vấn CQL và nodetool status
+2.5. Giả định và ràng buộc
+Cassandra đã được cài đặt và chạy ổn định trước khi Backend khởi động.
+Các Service sử dụng thống nhất tên trường và định dạng thời gian.
+Dữ liệu demo giới hạn 300-500 log để phù hợp phạm vi môn học, không đại diện cho tải production.
+Các truy vấn chính phải được thiết kế theo Query-First và hạn chế ALLOW FILTERING.
+Phiên bản MVP có thể triển khai trên một node Cassandra phục vụ demo; mô hình nhiều node là hướng mở rộng.
+2.6. Phạm vi ngoài hệ thống (Out of Scope)
+Để tránh mở rộng phạm vi ngoài yêu cầu môn học, phiên bản hiện tại không đặt mục tiêu xây dựng một nền tảng SIEM hoàn chỉnh, không thực hiện phân tích log bằng Machine Learning, không triển khai streaming quy mô lớn bằng Kafka, không thực hiện full-text search bằng Elasticsearch/OpenSearch, không xây dựng cơ chế multi-datacenter và không cam kết các chỉ tiêu tải ở mức production. Các nội dung này chỉ được xem là hướng phát triển.
+Hệ thống cũng không thay thế cơ chế logging kỹ thuật của từng ứng dụng. Audit Log trong đề tài chỉ tập trung vào các sự kiện nghiệp vụ và thao tác cần truy vết như đăng nhập, CRUD người dùng, tạo/hủy đơn hàng và thanh toán.
+CHƯƠNG 3: YÊU CẦU CHỨC NĂNG
+Chương này xác định các chức năng mà hệ thống phải cung cấp để tiếp nhận, ghi nhận, tra cứu và quản trị Audit Log. Mỗi yêu cầu được gắn mã, mô tả và mức độ ưu tiên nhằm giúp nhóm phát triển thống nhất phạm vi triển khai, đồng thời tạo cơ sở cho kiểm thử và nghiệm thu sau này.
+Bảng 3.1. Danh sách yêu cầu chức năng của hệ thống
+Mã
+Tên yêu cầu
+Mô tả
+Ưu tiên
+FR-01
+Đăng nhập Admin
+Admin đăng nhập bằng thông tin hợp lệ để truy cập Dashboard.
+Must
+FR-02
+Tiếp nhận Audit Log
+Backend cung cấp API nhận log từ Service; kiểm tra các trường bắt buộc trước khi ghi.
+Must
+FR-03
+Tự động tạo Audit Log
+Hệ thống tự tạo log khi xảy ra các thao tác quan trọng.
+Must
+FR-04
+Lưu Audit Log vào Cassandra
+Audit Log hợp lệ được ghi vào bảng Cassandra phù hợp.
+Must
+FR-05
+Xem danh sách Audit Log
+Admin xem danh sách log với thời gian, service, level, action, user, message.
+Must
+FR-06
+Lọc theo Service
+Cho phép lọc Auth/User/Order/Payment hoặc Service bổ sung.
+Must
+FR-07
+Lọc theo Level
+Cho phép lọc INFO/WARN/ERROR.
+Must
+FR-08
+Lọc theo ngày/khoảng thời gian
+Cho phép chọn ngày hoặc From-To hợp lệ.
+Must
+FR-09
+Kết hợp điều kiện lọc
+Hỗ trợ Service + Level + Time theo bảng truy vấn phù hợp.
+Must
+FR-10
+Xem chi tiết Audit Log
+Hiển thị log_id, service, time, level, user, action, IP, message, details.
+Must
+FR-11
+Thêm Service
+Admin tạo Service mới với tên, mô tả và trạng thái.
+Must
+FR-12
+Xem danh sách Service
+Admin xem toàn bộ Service được giám sát.
+Must
+FR-13
+Cập nhật Service
+Admin sửa tên/mô tả/trạng thái.
+Must
+FR-14
+Xóa Service
+Admin xóa Service sau bước xác nhận.
+Must
+FR-15
+Ghi log với TTL
+Cho phép ghi log có TTL cấu hình theo request hoặc script demo.
+Must
+FR-16
+Kiểm tra TTL
+Chứng minh log tồn tại trước TTL và tự hết hạn sau TTL.
+Must
+FR-17
+Sinh dữ liệu mẫu
+Sinh 300-500 log từ bốn Service và đủ ba Level.
+Must
+FR-18
+Kiểm tra CQLSH
+CQLSH kết nối được Keyspace và thực thi truy vấn.
+Must
+FR-19
+Kiểm tra nodetool status
+Hiển thị trạng thái node Cassandra phục vụ báo cáo/demo.
+Must
+FR-20
+Dashboard Summary
+Hiển thị tổng log và số lượng INFO/WARN/ERROR.
+Should
+FR-21
+Reset bộ lọc
+Khôi phục điều kiện lọc về trạng thái mặc định.
+Should
+FR-22
+Thông báo không có dữ liệu
+Hiển thị thông báo rõ ràng khi truy vấn trả về rỗng.
+Must
+FR-23
+Phân trang danh sách log
+Hỗ trợ paging/cursor để không tải toàn bộ log cùng lúc.
+Should
+FR-24
+Ghi nhận lỗi hệ thống
+Khi lỗi xử lý quan trọng xảy ra, hệ thống có thể tạo ERROR log.
+Should
+3.1. Quy định dữ liệu đầu vào Audit Log
+Bảng 3.2. Quy định dữ liệu đầu vào của Audit Log
+Trường
+Bắt buộc
+Quy tắc
+log_id
+Có
+UUID duy nhất; có thể do Backend sinh
+service_name
+Có
+Không rỗng; nên khớp danh mục Service
+log_date
+Có
+Ngày phát sinh, dùng cho partition
+log_time
+Có
+Timestamp chính xác tới mili giây nếu có thể
+level
+Có
+Chỉ INFO/WARN/ERROR
+action
+Có
+Tên hành động viết thống nhất, ví dụ CREATE_USER
+user_id
+Không
+Có thể null với tác vụ hệ thống
+ip_address
+Không
+IPv4/IPv6 hợp lệ nếu ghi nhận
+message
+Có
+Mô tả ngắn gọn sự kiện
+details
+Không
+Chuỗi JSON/text bổ sung; không chứa mật khẩu/token
+3.2. Danh sách Action chuẩn
+Bảng 3.3. Danh sách Action chuẩn theo từng Service
+Service
+Action đề xuất
+Auth
+LOGIN, LOGIN_SUCCESS, LOGIN_FAILED, LOGOUT, RESET_PASSWORD
+User
+CREATE_USER, UPDATE_USER, DELETE_USER, VIEW_USER
+Order
+CREATE_ORDER, UPDATE_ORDER, CANCEL_ORDER, DELETE_ORDER
+Payment
+CREATE_PAYMENT, PAYMENT_SUCCESS, PAYMENT_FAILED, REFUND
+CHƯƠNG 4: ĐẶC TẢ USE CASE
+Các Use Case trong chương này mô tả cách từng tác nhân tương tác với hệ thống trong những tình huống nghiệp vụ chính. Mỗi Use Case trình bày rõ tiền điều kiện, hậu điều kiện, luồng chính và các trường hợp thay thế/ngoại lệ để giảm sự mơ hồ khi triển khai Frontend, Backend và kiểm thử.
+UC-01 - Đăng nhập Admin
+Bảng 4.1. Đặc tả UC-01 - Đăng nhập Admin
+Thuộc tính
+Nội dung
+Mã Use Case
+UC-01
+Tên Use Case
+Đăng nhập Admin
+Actor
+Admin
+Tiền điều kiện
+Có tài khoản hợp lệ
+Hậu điều kiện
+Admin truy cập Dashboard
+Luồng chính
+Nhập thông tin -&gt; kiểm tra -&gt; xác thực -&gt; chuyển Dashboard
+Luồng thay thế/ngoại lệ
+Sai thông tin: báo lỗi, không tạo phiên đăng nhập
+UC-02 - Xem danh sách Audit Log
+Bảng 4.2. Đặc tả UC-02 - Xem danh sách Audit Log
+Thuộc tính
+Nội dung
+Mã Use Case
+UC-02
+Tên Use Case
+Xem danh sách Audit Log
+Actor
+Admin
+Tiền điều kiện
+Đăng nhập; Cassandra/Backend hoạt động
+Hậu điều kiện
+Danh sách log được hiển thị
+Luồng chính
+Mở Dashboard -&gt; Frontend gọi API -&gt; Backend query -&gt; trả dữ liệu
+Luồng thay thế/ngoại lệ
+DB lỗi: hiển thị lỗi kết nối; không có dữ liệu: hiển thị danh sách rỗng
+UC-03 - Lọc Audit Log
+Bảng 4.3. Đặc tả UC-03 - Lọc Audit Log
+Thuộc tính
+Nội dung
+Mã Use Case
+UC-03
+Tên Use Case
+Lọc Audit Log
+Actor
+Admin
+Tiền điều kiện
+Đang ở trang Audit Log
+Hậu điều kiện
+Kết quả phù hợp bộ lọc
+Luồng chính
+Chọn service/level/time -&gt; Search -&gt; validate -&gt; query -&gt; hiển thị
+Luồng thay thế/ngoại lệ
+From &gt; To: yêu cầu nhập lại; không có kết quả: thông báo
+UC-04 - Xem chi tiết Audit Log
+Bảng 4.4. Đặc tả UC-04 - Xem chi tiết Audit Log
+Thuộc tính
+Nội dung
+Mã Use Case
+UC-04
+Tên Use Case
+Xem chi tiết Audit Log
+Actor
+Admin
+Tiền điều kiện
+Danh sách có dữ liệu
+Hậu điều kiện
+Thông tin chi tiết được hiển thị
+Luồng chính
+Chọn Detail -&gt; gọi API -&gt; lấy log -&gt; hiển thị modal
+Luồng thay thế/ngoại lệ
+Log không tồn tại: 404 và thông báo
+UC-05 - Thêm Service
+Bảng 4.5. Đặc tả UC-05 - Thêm Service
+Thuộc tính
+Nội dung
+Mã Use Case
+UC-05
+Tên Use Case
+Thêm Service
+Actor
+Admin
+Tiền điều kiện
+Đăng nhập
+Hậu điều kiện
+Service mới được lưu
+Luồng chính
+Add -&gt; nhập dữ liệu -&gt; validate -&gt; lưu -&gt; reload danh sách
+Luồng thay thế/ngoại lệ
+Trùng tên hoặc thiếu tên: từ chối
+UC-06 - Cập nhật Service
+Bảng 4.6. Đặc tả UC-06 - Cập nhật Service
+Thuộc tính
+Nội dung
+Mã Use Case
+UC-06
+Tên Use Case
+Cập nhật Service
+Actor
+Admin
+Tiền điều kiện
+Service tồn tại
+Hậu điều kiện
+Thông tin được cập nhật
+Luồng chính
+Edit -&gt; sửa -&gt; Save -&gt; validate -&gt; update
+Luồng thay thế/ngoại lệ
+Service không tồn tại: 404
+UC-07 - Xóa Service
+Bảng 4.7. Đặc tả UC-07 - Xóa Service
+Thuộc tính
+Nội dung
+Mã Use Case
+UC-07
+Tên Use Case
+Xóa Service
+Actor
+Admin
+Tiền điều kiện
+Service tồn tại
+Hậu điều kiện
+Service bị xóa/không còn hiển thị
+Luồng chính
+Delete -&gt; xác nhận -&gt; Backend xử lý -&gt; reload
+Luồng thay thế/ngoại lệ
+Hủy xác nhận: không xóa
+UC-08 - Tự động ghi Audit Log
+Bảng 4.8. Đặc tả UC-08 - Tự động ghi Audit Log
+Thuộc tính
+Nội dung
+Mã Use Case
+UC-08
+Tên Use Case
+Tự động ghi Audit Log
+Actor
+Business Service
+Tiền điều kiện
+Thao tác nghiệp vụ phát sinh
+Hậu điều kiện
+Log tương ứng được ghi Cassandra
+Luồng chính
+Xử lý nghiệp vụ -&gt; tạo log -&gt; insert bảng truy vấn -&gt; trả response
+Luồng thay thế/ngoại lệ
+Nếu ghi log lỗi: backend ghi lỗi kỹ thuật và không làm crash request nếu chính sách cho phép
+UC-09 - Ghi Audit Log TTL
+Bảng 4.9. Đặc tả UC-09 - Ghi Audit Log có TTL
+Thuộc tính
+Nội dung
+Mã Use Case
+UC-09
+Tên Use Case
+Ghi Audit Log TTL
+Actor
+Developer/Tester
+Tiền điều kiện
+Cassandra hoạt động
+Hậu điều kiện
+Log có TTL được tạo
+Luồng chính
+INSERT USING TTL 30 -&gt; SELECT kiểm tra
+Luồng thay thế/ngoại lệ
+Lệnh lỗi: hiển thị lỗi CQL
+UC-10 - Kiểm tra TTL
+Bảng 4.10. Đặc tả UC-10 - Kiểm tra TTL
+Thuộc tính
+Nội dung
+Mã Use Case
+UC-10
+Tên Use Case
+Kiểm tra TTL
+Actor
+Developer/Tester
+Tiền điều kiện
+Đã có log TTL
+Hậu điều kiện
+Log biến mất sau TTL
+Luồng chính
+SELECT ngay -&gt; chờ TTL -&gt; SELECT lại
+Luồng thay thế/ngoại lệ
+Clock/TTL chưa hết: tiếp tục chờ
+UC-11 - Kiểm tra Cassandra
+Bảng 4.11. Đặc tả UC-11 - Kiểm tra trạng thái Cassandra
+Thuộc tính
+Nội dung
+Mã Use Case
+UC-11
+Tên Use Case
+Kiểm tra Cassandra
+Actor
+Developer/Tester
+Tiền điều kiện
+Cassandra được cài
+Hậu điều kiện
+Xác nhận node hoạt động
+Luồng chính
+Chạy cqlsh và nodetool status
+Luồng thay thế/ngoại lệ
+Node down: ghi nhận lỗi và xử lý môi trường
+CHƯƠNG 5: THIẾT KẾ DỮ LIỆU APACHE CASSANDRA
+Chương này trình bày thiết kế dữ liệu theo tư duy Query-First của Apache Cassandra. Trọng tâm là xác định đúng Partition Key, Clustering Key và các bảng phục vụ từng mẫu truy vấn, qua đó bảo đảm việc ghi log liên tục và tra cứu theo Service, Level, ngày và khoảng thời gian được thực hiện hiệu quả mà không phụ thuộc vào ALLOW FILTERING.
+5.1. Nguyên tắc thiết kế Query-First
+Cassandra không được thiết kế theo hướng chuẩn hóa và JOIN như cơ sở dữ liệu quan hệ. Nhóm xác định các truy vấn cần phục vụ trước, sau đó thiết kế bảng có Partition Key và Clustering Key phù hợp. Việc nhân bản một phần dữ liệu giữa các bảng là chấp nhận được để tránh truy vấn quét toàn bộ dữ liệu và hạn chế ALLOW FILTERING.
+5.2. Keyspace
+Keyspace đề xuất: audit_log_system. Trong môi trường demo một node có thể sử dụng SimpleStrategy với replication_factor = 1. Khi mở rộng cluster nhiều node nên chuyển sang NetworkTopologyStrategy và cấu hình replication phù hợp từng datacenter.
+5.3. Bảng audit_logs
+Bảng audit_logs phục vụ truy vấn log theo Service, ngày và khoảng thời gian trong cùng partition.
+Bảng 5.1. Cấu trúc dữ liệu bảng audit_logs
+Cột
+Kiểu dữ liệu
+Vai trò
+Ý nghĩa
+service_name
+text
+Partition Key
+Tên dịch vụ
+log_date
+date
+Partition Key
+Ngày phát sinh
+log_time
+timestamp
+Clustering Key
+Thời điểm phát sinh
+log_id
+uuid
+Clustering bổ sung/định danh
+Mã log duy nhất
+level
+text
+Regular
+INFO/WARN/ERROR
+action
+text
+Regular
+Hành động
+user_id
+text
+Regular
+Người thực hiện
+ip_address
+text
+Regular
+Địa chỉ IP
+message
+text
+Regular
+Nội dung log
+details
+text
+Regular
+Chi tiết bổ sung
+PRIMARY KEY đề xuất: ((service_name, log_date), log_time, log_id). Thứ tự clustering: log_time DESC để dữ liệu mới nhất xuất hiện trước; log_id giúp tránh xung đột nếu nhiều log có cùng timestamp.
+5.4. Bảng audit_logs_by_service_level
+Bảng này phục vụ truy vấn theo Service + Level + Date + khoảng thời gian mà không cần ALLOW FILTERING.
+Bảng 5.2. Cấu trúc dữ liệu bảng audit_logs_by_service_level
+Cột
+Kiểu
+Vai trò
+service_name
+text
+Partition Key
+level
+text
+Partition Key
+log_date
+date
+Partition Key
+log_time
+timestamp
+Clustering Key
+log_id
+uuid
+Clustering/định danh
+action
+text
+Regular
+user_id
+text
+Regular
+ip_address
+text
+Regular
+message
+text
+Regular
+details
+text
+Regular
+PRIMARY KEY đề xuất: ((service_name, level, log_date), log_time, log_id).
+5.5. Bảng services
+Bảng 5.3. Cấu trúc dữ liệu bảng services
+Cột
+Kiểu
+Ý nghĩa
+service_id
+uuid
+Mã Service
+service_name
+text
+Tên Service
+description
+text
+Mô tả
+status
+boolean
+Trạng thái theo dõi
+created_at
+timestamp
+Thời gian tạo
+updated_at
+timestamp
+Thời gian cập nhật
+5.6. Lý do chọn Partition Key
+Nếu chỉ dùng service_name làm Partition Key, một Service hoạt động lâu dài có thể tạo partition rất lớn. Việc ghép service_name với log_date giúp chia dữ liệu theo từng ngày, giữ kích thước partition ở mức kiểm soát và vẫn phù hợp truy vấn phổ biến theo dịch vụ/ngày.
+5.7. CQL tạo cấu trúc đề xuất
+CREATE KEYSPACE IF NOT EXISTS audit_log_system WITH replication = {'class':'SimpleStrategy','replication_factor':1};
+CREATE TABLE audit_log_system.audit_logs (service_name text, log_date date, log_time timestamp, log_id uuid, level text, action text, user_id text, ip_address text, message text, details text, PRIMARY KEY ((service_name, log_date), log_time, log_id)) WITH CLUSTERING ORDER BY (log_time DESC, log_id ASC);
+CREATE TABLE audit_log_system.audit_logs_by_service_level (service_name text, level text, log_date date, log_time timestamp, log_id uuid, action text, user_id text, ip_address text, message text, details text, PRIMARY KEY ((service_name, level, log_date), log_time, log_id)) WITH CLUSTERING ORDER BY (log_time DESC, log_id ASC);
+CREATE TABLE audit_log_system.services (service_id uuid PRIMARY KEY, service_name text, description text, status boolean, created_at timestamp, updated_at timestamp);
+5.8. Truy vấn CQL bắt buộc
+Bảng 5.4. Danh mục truy vấn CQL bắt buộc
+Mã
+Mục đích
+CQL dạng mẫu
+Q01
+Log theo Service + Date
+SELECT * FROM audit_logs WHERE service_name=? AND log_date=?;
+Q02
+Theo khoảng thời gian
+SELECT * FROM audit_logs WHERE service_name=? AND log_date=? AND log_time&gt;=? AND log_time&lt;=?;
+Q03
+Service + Level + Date
+SELECT * FROM audit_logs_by_service_level WHERE service_name=? AND level=? AND log_date=?;
+Q04
+Service + Level + Time
+SELECT * FROM audit_logs_by_service_level WHERE service_name=? AND level=? AND log_date=? AND log_time&gt;=? AND log_time&lt;=?;
+Q05
+TTL 30 giây
+INSERT ... USING TTL 30;
+CHƯƠNG 6: ĐẶC TẢ GIAO DIỆN VÀ API
+Chương này quy định hợp đồng giao tiếp giữa Frontend, Backend và Cassandra. Các API được chuẩn hóa về endpoint, phương thức HTTP, dữ liệu đầu vào, mã trạng thái và lỗi để bảo đảm các thành phần tích hợp nhất quán và dễ kiểm thử.
+6.1. Quy ước REST API
+Dữ liệu trao đổi dùng JSON.
+Mã trạng thái: 200/201 thành công; 400 dữ liệu không hợp lệ; 401 chưa xác thực; 404 không tồn tại; 500 lỗi máy chủ.
+Thời gian truyền theo ISO 8601 nếu có thể.
+Không trả password, token bí mật hoặc dữ liệu nhạy cảm trong log.
+Bảng 6.1. Danh sách REST API của hệ thống
+Mã
+Method
+Endpoint
+Mục đích
+API-01
+POST
+/api/logs
+Tạo Audit Log
+API-02
+GET
+/api/logs
+Tra cứu Audit Log theo query parameters
+API-03
+GET
+/api/logs/{id}
+Xem chi tiết Audit Log
+API-04
+GET
+/api/services
+Danh sách Service
+API-05
+POST
+/api/services
+Tạo Service
+API-06
+PUT
+/api/services/{id}
+Cập nhật Service
+API-07
+DELETE
+/api/services/{id}
+Xóa Service
+6.2. API tạo Audit Log
+Request mẫu:
+{  "service_name": "Payment",  "level": "ERROR",  "action": "PAYMENT_FAILED",  "user_id": "U001",  "ip_address": "192.168.1.10",  "message": "Payment gateway timeout",  "details": "{\"orderId\":\"ORD001\"}"}
+Response thành công nên chứa status, message và log_id. Backend chịu trách nhiệm sinh log_date/log_time nếu client không cung cấp hoặc nếu chính sách hệ thống quy định thời gian máy chủ là nguồn chuẩn.
+6.3. API tra cứu Audit Log
+Ví dụ: GET /api/logs?service=Payment&amp;level=ERROR&amp;date=2026-10-09. Với khoảng thời gian trong một ngày có thể bổ sung from và to. Nếu truy vấn kéo dài qua nhiều ngày, Backend chia truy vấn theo từng log_date rồi hợp nhất kết quả có giới hạn, tránh quét không kiểm soát.
+6.4. Validate và xử lý lỗi API
+Bảng 6.2. Quy tắc validate và xử lý lỗi API
+Trường hợp
+HTTP
+Phản hồi mong đợi
+Thiếu service_name/action/message
+400
+Thông báo trường bắt buộc
+Level ngoài INFO/WARN/ERROR
+400
+Invalid level
+From &gt; To
+400
+Khoảng thời gian không hợp lệ
+Log/Service không tồn tại
+404
+Resource not found
+Cassandra mất kết nối
+500/503
+Thông báo hệ thống tạm thời không truy cập DB
+Không có log phù hợp
+200
+Trả danh sách rỗng []
+6.5. Yêu cầu giao tiếp ngoài hệ thống
+Hệ thống có ba nhóm giao tiếp chính: giao tiếp người dùng qua trình duyệt Web, giao tiếp Frontend-Backend qua REST/JSON và giao tiếp Backend-Cassandra qua Cassandra Driver/CQL. CQLSH và nodetool được sử dụng cho mục đích quản trị, kiểm thử và minh chứng, không phải là giao diện cho người dùng cuối.
+Bảng 6.3. Yêu cầu giao tiếp ngoài hệ thống
+Giao tiếp
+Thành phần
+Quy ước/Điều kiện
+Web UI
+Admin ↔ Frontend
+Trình duyệt hiện đại; giao diện hiển thị tốt trên laptop; thông báo loading/empty/error rõ ràng.
+REST API
+Frontend/Service ↔ Backend
+HTTP(S), JSON, mã trạng thái chuẩn; thời gian theo ISO 8601; validate dữ liệu đầu vào.
+Cassandra Driver
+Backend ↔ Cassandra
+Contact point/port/keyspace cấu hình qua biến môi trường; không hard-code thông tin nhạy cảm.
+CQLSH
+Developer/Tester ↔ Cassandra
+Dùng tạo cấu trúc, kiểm tra dữ liệu và demo truy vấn.
+nodetool
+Developer/Tester ↔ Cassandra
+Dùng kiểm tra trạng thái node/cluster khi demo và nghiệm thu.
+CHƯƠNG 7: YÊU CẦU GIAO DIỆN
+Phần giao diện tập trung vào trải nghiệm của Admin khi giám sát Audit Log. Các màn hình cần ưu tiên khả năng quan sát nhanh, lọc chính xác, nhận biết lỗi rõ ràng và duy trì tính nhất quán về bố cục, trạng thái loading, empty và error.
+7.1. Màn hình Dashboard
+Thẻ thống kê Total Logs, INFO, WARN, ERROR.
+Bộ lọc Service, Level, From Date/Time, To Date/Time.
+Nút Search và Reset.
+Bảng log gồm Time, Service, Level, Action, User, Message và Detail.
+Dữ liệu mới nhất hiển thị trước.
+Có trạng thái loading, empty và error rõ ràng.
+7.2. Màn hình chi tiết Audit Log
+Log ID
+Service
+Log Date/Time
+Level
+User
+Action
+IP
+Message
+Details
+7.3. Màn hình quản lý Service
+Danh sách ID, Service Name, Description, Status.
+Nút Add Service.
+Edit và Delete theo từng dòng.
+Xác nhận trước khi xóa.
+Tên Service bắt buộc và nên duy nhất.
+7.4. Quy tắc UX
+ERROR cần dễ nhận biết bằng màu/cảnh báo trực quan; WARN khác biệt với INFO.
+Không dùng màu là tín hiệu duy nhất; luôn hiển thị chữ INFO/WARN/ERROR.
+Thông báo lỗi ngắn gọn, có khả năng hành động.
+Giữ bộ lọc đã chọn sau khi xem chi tiết và quay lại danh sách nếu có thể.
+Bảng dữ liệu phải hiển thị tốt trên độ phân giải laptop thông dụng.
+CHƯƠNG 8: YÊU CẦU PHI CHỨC NĂNG VÀ QUY TẮC NGHIỆP VỤ
+Ngoài các chức năng nghiệp vụ, hệ thống cần đáp ứng các yêu cầu về hiệu năng, ổn định, bảo mật, khả năng mở rộng và khả năng truy vết. Các quy tắc nghiệp vụ trong chương này là điều kiện bắt buộc để dữ liệu Audit Log có ý nghĩa, nhất quán và phù hợp với cách Cassandra được sử dụng.
+8.1. Yêu cầu phi chức năng
+Các yêu cầu phi chức năng quy định mức chất lượng mà hệ thống cần đạt trong quá trình vận hành và demo. Nhóm yêu cầu này tập trung vào hiệu năng, khả năng mở rộng, độ ổn định, tính nhất quán, bảo mật, khả năng bảo trì, truy vết và kiểm thử.
+Bảng 8.1. Yêu cầu phi chức năng của hệ thống
+Mã
+Nhóm
+Yêu cầu
+NFR-01
+Hiệu năng
+Xử lý ổn định dữ liệu demo 300-500 log; truy vấn phổ biến phản hồi đủ nhanh để thao tác trực tiếp.
+NFR-02
+Khả năng mở rộng
+Data model hỗ trợ mở rộng ngang và partition hợp lý.
+NFR-03
+Ổn định
+Lỗi một API không làm Backend dừng toàn bộ; có exception handling.
+NFR-04
+Khả dụng
+Giao diện rõ ràng, bộ lọc dễ hiểu, trạng thái lỗi/empty/loading đầy đủ.
+NFR-05
+Nhất quán
+Tên trường được thống nhất giữa Cassandra, Backend và Frontend.
+NFR-06
+Bảo mật
+Không lưu password/token/card data nhạy cảm trong log; validate đầu vào.
+NFR-07
+Bảo trì
+Source code chia module config/controller/service/route/middleware.
+NFR-08
+Truy vết
+Thao tác quan trọng phải có log tương ứng.
+NFR-09
+Khả năng kiểm thử
+Các chức năng chính có Test Case và dữ liệu kiểm tra.
+NFR-10
+Khả năng quan sát
+Admin có thể phát hiện và xem ERROR qua Dashboard.
+8.2. Quy tắc nghiệp vụ
+Bảng 8.2. Quy tắc nghiệp vụ của hệ thống Audit Log
+Mã
+Quy tắc
+BR-01
+Mỗi Audit Log thuộc một Service.
+BR-02
+Service tối thiểu gồm Auth, User, Order, Payment.
+BR-03
+Level chỉ là INFO, WARN hoặc ERROR.
+BR-04
+Mỗi log phải có log_time, action và message.
+BR-05
+Audit Log hiển thị theo thời gian mới nhất trước.
+BR-06
+Người dùng thông thường không được sửa nội dung Audit Log đã ghi.
+BR-07
+Log TTL tự hết hạn khi TTL kết thúc.
+BR-08
+Tên Service không rỗng và nên duy nhất.
+BR-09
+From time không được lớn hơn To time.
+BR-10
+Các truy vấn chính không phụ thuộc ALLOW FILTERING; ưu tiên bảng query-first.
+BR-11
+Không ghi password, access token hoặc dữ liệu thẻ thanh toán vào message/details.
+BR-12
+Khi ghi cùng một log vào nhiều bảng, Backend phải giữ log_id và nội dung nhất quán.
+CHƯƠNG 9: KIỂM THỬ VÀ TIÊU CHÍ NGHIỆM THU
+Chương này xác định các tình huống kiểm thử từ kết nối Cassandra, ghi và truy vấn log, CRUD Service, TTL cho đến xử lý lỗi. Kết quả kiểm thử là bằng chứng trực tiếp để xác nhận hệ thống đáp ứng các yêu cầu đã đặc tả và đủ điều kiện trình diễn khi bảo vệ.
+9.1. Bộ Test Case chức năng và tích hợp
+Bộ Test Case dưới đây được xây dựng để kiểm tra từ kết nối Cassandra, API, truy vấn CQL, CRUD Service, Auto Audit Log, TTL đến các trường hợp lỗi. Mỗi Test Case cần được thực thi trên cùng phiên bản source dùng để demo và lưu lại bằng chứng kết quả khi nghiệm thu.
+Bảng 9.1. Bộ Test Case chức năng và tích hợp
+Mã
+Nội dung
+Thao tác/Input
+Kết quả mong đợi
+TC-01
+Kết nối Cassandra
+Khởi động Cassandra/Backend
+Kết nối thành công
+TC-02
+CQLSH
+Chạy cqlsh
+Vào được Cassandra
+TC-03
+INSERT log
+POST log hợp lệ
+Log xuất hiện trong Cassandra
+TC-04
+Thiếu Service
+POST thiếu service_name
+400
+TC-05
+Invalid Level
+level=HIGH
+400
+TC-06
+Query Service
+service=Auth
+Chỉ log Auth
+TC-07
+Query Level
+level=ERROR
+Chỉ ERROR
+TC-08
+Service + Level
+Payment + ERROR
+Chỉ Payment ERROR
+TC-09
+Query Time
+From-To hợp lệ
+Đúng khoảng thời gian
+TC-10
+Invalid Time
+From &gt; To
+400/thông báo nhập lại
+TC-11
+View Detail
+Mở log tồn tại
+Hiển thị đủ chi tiết
+TC-12
+Add Service
+Dữ liệu hợp lệ
+Service mới được tạo
+TC-13
+Edit Service
+Sửa mô tả/trạng thái
+Cập nhật thành công
+TC-14
+Delete Service
+Xác nhận xóa
+Service bị xóa
+TC-15
+Auto Audit Log
+Thực hiện CREATE_USER
+Tự sinh CREATE_USER log
+TC-16
+TTL
+INSERT TTL=30
+Trước 30s có, sau TTL hết hạn
+TC-17
+nodetool status
+Chạy lệnh
+Node ở trạng thái hoạt động
+TC-18
+Empty result
+Bộ lọc không có dữ liệu
+Danh sách rỗng, không crash
+TC-19
+DB mất kết nối
+Dừng Cassandra rồi gọi API
+API xử lý lỗi có kiểm soát
+TC-20
+Dummy Data
+Chạy script sinh dữ liệu
+Đủ 300-500 log, 4 service, 3 level
+9.2. Tiêu chí nghiệm thu
+Partition Key theo service_name + log_date; clustering theo log_time (và log_id nếu triển khai).
+Backend kết nối Cassandra thành công.
+Có API tiếp nhận Audit Log và CRUD Service.
+Auto Audit Log hoạt động với các thao tác minh họa.
+Tra cứu được theo Service, Level và khoảng thời gian.
+TTL hoạt động và demo được bản ghi tự hết hạn.
+Dashboard hiển thị/lọc/xem chi tiết log chính xác.
+Có 300-500 log mẫu từ ít nhất 4 Service và đủ INFO/WARN/ERROR.
+Có kết quả nodetool status và ảnh kiểm thử trong báo cáo.
+Source code, CQL script, dữ liệu mẫu và tài liệu cùng phiên bản.
+9.3. Chiến lược kiểm thử và điều kiện Pass/Fail
+Kiểm thử được thực hiện theo ba mức: kiểm thử thành phần/API, kiểm thử tích hợp Frontend-Backend-Cassandra và kiểm thử chấp nhận theo kịch bản demo. Một Test Case được đánh dấu Pass khi kết quả thực tế khớp kết quả mong đợi và không phát sinh lỗi blocker; được đánh dấu Fail khi sai dữ liệu, sai mã trạng thái, truy vấn không thực thi được hoặc hệ thống mất ổn định.
+Bảng 9.2. Chiến lược kiểm thử và bằng chứng
+Mức kiểm thử
+Mục tiêu
+Bằng chứng tối thiểu
+API/Chức năng
+Xác minh validate, CRUD, tạo/tra cứu log
+Response JSON, HTTP status, dữ liệu trong Cassandra
+Tích hợp
+Xác minh luồng Frontend → Backend → Cassandra
+Ảnh Dashboard + log/API/CQLSH tương ứng
+Cassandra/CQL
+Xác minh Data Model, Query-First, TTL
+Câu lệnh CQL và kết quả SELECT trước/sau TTL
+Hiệu năng demo
+Ghi nhận thời gian với 100/300/500 log
+Bảng số liệu thực tế, cấu hình môi trường, log đo
+Chấp nhận
+Chạy trọn kịch bản bảo vệ
+Checklist demo, ảnh nodetool, kết quả lọc ERROR
+CHƯƠNG 10: MA TRẬN TRUY VẾT VÀ PRODUCT BACKLOG
+Ma trận truy vết liên kết yêu cầu với Use Case, API và Test Case nhằm bảo đảm không có chức năng quan trọng bị bỏ sót. Product Backlog được chia theo Sprint để nhóm có thể triển khai theo thứ tự ưu tiên, từ nền tảng Cassandra đến truy vấn nâng cao, Dashboard và kiểm thử tích hợp.
+10.1. Ma trận truy vết yêu cầu
+Bảng 10.1. Ma trận truy vết yêu cầu
+Yêu cầu
+Use Case
+API/Thành phần
+Test Case
+FR-02
+UC-08
+API-01
+TC-03/04/05
+FR-05
+UC-02
+API-02
+TC-06
+FR-06/07/08/09
+UC-03
+API-02
+TC-06/07/08/09/10
+FR-10
+UC-04
+API-03
+TC-11
+FR-11/12/13/14
+UC-05/06/07
+API-04..07
+TC-12/13/14
+FR-15/16
+UC-09/10
+CQL TTL
+TC-16
+FR-18/19
+UC-11
+CQLSH/nodetool
+TC-02/17
+FR-17
+-
+Dummy data script
+TC-20
+10.2. Quy ước ưu tiên MoSCoW
+Bảng 10.2. Quy ước mức độ ưu tiên MoSCoW
+Mức
+Ý nghĩa
+Must
+Bắt buộc để nghiệm thu
+Should
+Quan trọng, nên hoàn thành
+Could
+Có thể bổ sung nếu còn thời gian
+Won't now
+Chưa triển khai trong phạm vi hiện tại
+10.3. Product Backlog Sprint 1 - Nền tảng Cassandra và Backend
+Bảng 10.3. Product Backlog Sprint 1 - Nền tảng Cassandra và Backend
+ID
+Backlog Item
+Ưu tiên
+Story Point
+PB-01
+Thiết lập Cassandra, Keyspace và CQLSH
+Must
+5
+PB-02
+Thiết kế audit_logs theo Query-First
+Must
+5
+PB-03
+Thiết kế bảng service+level
+Must
+5
+PB-04
+Kết nối Backend với Cassandra
+Must
+5
+PB-05
+API tạo Audit Log
+Must
+5
+PB-06
+CRUD Service API
+Must
+5
+PB-07
+Auto Audit Log cơ bản
+Must
+8
+10.4. Product Backlog Sprint 2 - Query, TTL và dữ liệu mẫu
+Bảng 10.4. Product Backlog Sprint 2 - Query, TTL và dữ liệu mẫu
+ID
+Backlog Item
+Ưu tiên
+Story Point
+PB-08
+Query Service/Date/Time
+Must
+5
+PB-09
+Query Service+Level+Date
+Must
+5
+PB-10
+TTL 30 giây và kịch bản demo
+Must
+3
+PB-11
+Script sinh 300-500 log
+Must
+5
+PB-12
+Đo/ghi nhận kết quả truy vấn
+Should
+3
+PB-13
+Xử lý lỗi và validate API
+Must
+5
+10.5. Product Backlog Sprint 3 - Dashboard, tích hợp và kiểm thử
+Bảng 10.5. Product Backlog Sprint 3 - Dashboard, tích hợp và kiểm thử
+ID
+Backlog Item
+Ưu tiên
+Story Point
+PB-14
+Dashboard danh sách Audit Log
+Must
+5
+PB-15
+Bộ lọc Service/Level/Time
+Must
+5
+PB-16
+View Detail
+Must
+3
+PB-17
+Service Management UI
+Must
+5
+PB-18
+Dashboard Summary
+Should
+3
+PB-19
+Tích hợp Frontend-Backend-Cassandra
+Must
+8
+PB-20
+nodetool status và bộ Test Case
+Must
+5
+PB-21
+Hoàn thiện báo cáo và demo
+Must
+5
+10.6. Definition of Done
+Code chạy được trên môi trường nhóm.
+Có kiểm thử tối thiểu cho chức năng tương ứng.
+Không còn lỗi blocker ảnh hưởng demo.
+Tên trường/API thống nhất tài liệu.
+Có ảnh hoặc bằng chứng chạy nếu là chức năng Cassandra/TTL/nodetool.
+Code đã được tích hợp vào phiên bản demo chung.
+CHƯƠNG 11: TRIỂN KHAI, DỮ LIỆU MẪU VÀ KỊCH BẢN DEMO
+Chương này chuyển đặc tả thành kế hoạch trình diễn cụ thể. Dữ liệu mẫu được phân bổ có chủ đích để đủ bốn Service và ba mức INFO/WARN/ERROR; đồng thời kịch bản demo được tách theo từng thành viên để chứng minh khả năng ghi log tự động, TTL, lọc Dashboard và trạng thái Cassandra.
+11.1. Dữ liệu mẫu
+Khuyến nghị tạo 400 Audit Log để vượt ngưỡng tối thiểu và vẫn dễ kiểm soát trong demo.
+Bảng 11.1. Phân bổ 400 Audit Log mẫu theo Service và Level
+Service
+INFO
+WARN
+ERROR
+Tổng
+Auth
+70
+20
+10
+100
+User
+70
+20
+10
+100
+Order
+65
+20
+15
+100
+Payment
+60
+20
+20
+100
+Tổng
+265
+80
+55
+400
+11.2. Kịch bản demo thành viên 1
+1. Mở ứng dụng hoặc API nghiệp vụ.
+2. Thực hiện đăng nhập hoặc thêm/sửa/xóa dữ liệu.
+3. Mở CQLSH.
+4. Truy vấn partition tương ứng.
+5. Chứng minh Audit Log vừa phát sinh ngay sau thao tác.
+11.3. Kịch bản demo thành viên 2 - TTL
+1. INSERT một log với TTL = 30 giây.
+2. SELECT ngay để chứng minh bản ghi tồn tại.
+3. Chờ TTL kết thúc.
+4. SELECT lại cùng partition.
+5. Chứng minh bản ghi đã tự hết hạn.
+11.4. Kịch bản demo thành viên 3 - Dashboard và Cassandra
+1. Mở Dashboard.
+2. Chọn Service = Payment hoặc Auth.
+3. Chọn Level = ERROR.
+4. Chọn dải thời gian.
+5. Search và kiểm tra danh sách kết quả.
+6. Mở chi tiết một log.
+7. Chạy nodetool status và trình bày trạng thái Cassandra.
+11.5. Checklist trước khi bảo vệ
+Cassandra, Backend và Frontend đều chạy trên cùng phiên bản source.
+Cassandra chạy ổn định và truy cập được bằng CQLSH.
+Có Keyspace và các bảng phục vụ truy vấn chính.
+Dữ liệu mẫu đã nạp đủ.
+Đã thử toàn bộ kịch bản demo ít nhất một lần.
+TTL demo dùng bản ghi riêng để tránh ảnh hưởng dữ liệu chính.
+Các lệnh CQL demo được chuẩn bị sẵn trong file queries.cql.
+Đã chụp nodetool status và một số kết quả truy vấn để dự phòng.
+CHƯƠNG 12: RỦI RO, GIỚI HẠN VÀ HƯỚNG PHÁT TRIỂN
+Phần này nhận diện các rủi ro kỹ thuật có thể ảnh hưởng đến quá trình triển khai và demo, đồng thời nêu rõ giới hạn của phiên bản môn học. Việc xác định trước rủi ro và hướng mở rộng giúp nhóm chủ động phương án dự phòng và phân biệt rõ phạm vi MVP với các chức năng nâng cao trong tương lai.
+12.1. Rủi ro và phương án giảm thiểu
+Bảng 12.1. Danh sách rủi ro và phương án giảm thiểu
+Mã
+Rủi ro
+Giảm thiểu
+RSK-01
+Cassandra không khởi động
+Kiểm tra Java, cấu hình, port; chuẩn bị hướng dẫn cài đặt
+RSK-02
+Backend không kết nối DB
+Kiểm tra contact point, port, datacenter, keyspace
+RSK-03
+Truy vấn cần ALLOW FILTERING
+Thiết kế bảng mới theo Query-First
+RSK-04
+Partition quá lớn
+Dùng service_name + log_date
+RSK-05
+Trùng timestamp
+Thêm log_id vào clustering key
+RSK-06
+Frontend/Backend lệch tên trường
+Chốt API contract trước khi tích hợp
+RSK-07
+TTL demo không đúng thời điểm
+Chuẩn bị lệnh và đồng hồ, dùng TTL 30s riêng
+RSK-08
+Dữ liệu nhạy cảm bị ghi log
+Mask/loại bỏ password, token và dữ liệu thanh toán
+12.2. Giới hạn phiên bản hiện tại
+Phục vụ quy mô môn học và demo; chưa đo tải production.
+Có thể chỉ dùng một node Cassandra.
+Chưa triển khai SIEM, cảnh báo thời gian thực nâng cao hoặc phát hiện bất thường.
+Chưa tối ưu lưu trữ dài hạn theo nhiều tier.
+Phân quyền có thể giới hạn ở Admin trong MVP.
+12.3. Hướng phát triển
+Tích hợp Kafka để thu nhận log theo luồng.
+Tích hợp Elasticsearch/OpenSearch cho full-text search.
+Kết hợp Grafana/Kibana cho dashboard nâng cao.
+Cảnh báo Email/Telegram khi ERROR vượt ngưỡng.
+Triển khai Cassandra cluster nhiều node và NetworkTopologyStrategy.
+Phân tích bất thường và phát hiện hành vi đáng ngờ.
+Xuất CSV/Excel và chính sách lưu trữ/retention linh hoạt.
+Bổ sung RBAC và audit riêng cho thao tác quản trị.
+CHƯƠNG 13: BỔ SUNG HOÀN THIỆN THEO BAREM ĐỀ TÀI
+Chương 13 đối chiếu trực tiếp nội dung SRS với barem chính thức của đề tài. Mục tiêu là làm rõ những điểm có khả năng được giảng viên kiểm tra khi bảo vệ như lý do chọn Cassandra, thiết kế khóa, TTL, truy vấn CQL, CRUD, dữ liệu mẫu, kiểm thử hiệu năng và minh chứng thực tế.
+Chương này đối chiếu trực tiếp với yêu cầu chính thức của Đề tài 10 nhằm bảo đảm tài liệu SRS không chỉ đầy đủ về đặc tả phần mềm mà còn bao phủ các tiêu chí được dùng để đánh giá: giải trình kiến trúc Cassandra, thiết kế Partition Key/Clustering Key, CRUD nền tảng, TTL, truy vấn CQL, dữ liệu mẫu, kiểm thử hiệu năng và demo trực quan.
+13.1. Đối chiếu barem đánh giá
+Bảng 13.1. Đối chiếu barem đánh giá với nội dung SRS và minh chứng
+Nhóm tiêu chí
+Yêu cầu trọng tâm
+Nội dung đáp ứng trong SRS
+Minh chứng cần có
+Báo cáo &amp; thiết kế CSDL
+Giải trình Cassandra và thiết kế khóa
+Chương 5 và 13.2-13.5
+Data model, CQL tạo bảng, giải thích khóa
+CRUD nền tảng
+API nhận log và cấu hình Service
+Chương 3, 6 và 13.9
+API response, giao diện CRUD
+Chức năng nâng cao
+TTL và truy vấn service/level/time
+Chương 5 và 13.6-13.7
+TTL trước/sau, kết quả CQL
+Kiểm thử &amp; demo
+Dummy data, hiệu năng, demo sống
+Chương 9, 11 và 13.10-13.13
+Bảng đo, ảnh CQLSH, nodetool, Dashboard
+13.2. Giải trình lựa chọn Apache Cassandra cho Audit Log
+Audit Log là loại dữ liệu có đặc trưng phát sinh liên tục, thiên về ghi, tăng theo thời gian và thường được tra cứu theo những mẫu xác định trước như dịch vụ, ngày, mức độ lỗi và khoảng thời gian. Những đặc điểm này phù hợp với mô hình Wide Column của Apache Cassandra.
+Khả năng ghi cao: kiến trúc lưu trữ của Cassandra phù hợp với workload phát sinh nhiều bản ghi log liên tục.
+Mở rộng ngang: khi số lượng log tăng, hệ thống có thể bổ sung node để phân phối dữ liệu và tải xử lý.
+Phân tán và replication: Cassandra được thiết kế cho môi trường phân tán, hỗ trợ nhân bản dữ liệu để tăng tính sẵn sàng.
+Query-First: bảng được thiết kế trực tiếp theo các truy vấn nghiệp vụ, phù hợp với log vốn có mẫu truy vấn tương đối ổn định.
+TTL tích hợp: dữ liệu có thể tự hết hạn ngay tại tầng Cassandra, phù hợp chính sách retention của log.
+Tránh JOIN phức tạp: Audit Log chủ yếu là bản ghi sự kiện độc lập nên không cần quan hệ nhiều bảng như hệ quản trị quan hệ.
+Phân vùng theo service và ngày: giúp giới hạn kích thước partition và hỗ trợ truy vấn theo khoảng thời gian hiệu quả.
+Hình 13.1. Kiến trúc tổng thể hệ thống Audit Log
+13.3. So sánh Cassandra và CSDL quan hệ trong bài toán Audit Log
+Bảng 13.2. So sánh Apache Cassandra và CSDL quan hệ trong bài toán Audit Log
+Tiêu chí
+Apache Cassandra
+CSDL quan hệ truyền thống
+Mô hình lưu trữ
+Wide Column, phân tán
+Bảng quan hệ, chuẩn hóa
+Workload ghi liên tục
+Phù hợp với write-heavy workload
+Phụ thuộc thiết kế/index và tài nguyên máy chủ
+Mở rộng
+Ưu tiên scale-out bằng thêm node
+Thường scale-up trước, scale-out phức tạp hơn
+JOIN
+Không phải trọng tâm
+Hỗ trợ mạnh
+Thiết kế truy vấn
+Query-First, chấp nhận denormalization
+Có thể truy vấn linh hoạt sau khi chuẩn hóa
+TTL
+Hỗ trợ trực tiếp trên dữ liệu
+Thường cần job hoặc cơ chế ứng dụng
+Phù hợp đề tài
+Rất phù hợp với log theo service/time
+Phù hợp nếu quy mô nhỏ và cần quan hệ phức tạp
+Bảng so sánh không nhằm khẳng định Cassandra luôn tốt hơn CSDL quan hệ. Trong đề tài này, lựa chọn Cassandra xuất phát từ đặc điểm workload và mục tiêu học tập NoSQL: dữ liệu log tăng nhanh, truy vấn có mẫu rõ ràng, cần TTL và cần minh họa khả năng phân tán/mở rộng ngang.
+13.4. Phân tích Partition Key và Clustering Key
+Bảng audit_logs sử dụng PRIMARY KEY ((service_name, log_date), log_time, log_id). Trong đó (service_name, log_date) là Partition Key tổng hợp; log_time và log_id là Clustering Key.
+Bảng 13.3. Phân tích lựa chọn Partition Key và Clustering Key
+Thành phần
+Lý do lựa chọn
+Rủi ro nếu thiết kế khác
+service_name
+Đúng với truy vấn chính theo dịch vụ
+Nếu không có service trong partition, truy vấn có thể phải phân tán rộng
+log_date
+Chia partition theo ngày, tránh partition tăng vô hạn
+Chỉ dùng service_name có thể tạo partition rất lớn
+log_time
+Cho phép range query và sắp xếp mới nhất trước
+Nếu không clustering theo thời gian, truy vấn dải thời gian kém phù hợp
+log_id
+Phân biệt các log có cùng timestamp
+Có thể xung đột khóa nếu nhiều log trùng thời điểm
+Không chọn log_id làm Partition Key chính vì khi đó mỗi log nằm ở một partition riêng, gây khó khăn cho truy vấn theo service/ngày và buộc hệ thống phải biết chính xác ID từng log. Không chỉ dùng service_name vì partition có thể tăng rất lớn theo thời gian. Việc dùng log_time DESC phù hợp Dashboard vì log mới nhất cần xuất hiện trước.
+Hình 13.2. Mô hình dữ liệu Cassandra theo Query-First
+13.5. CQL hoàn chỉnh cho cấu trúc dữ liệu
+CREATE KEYSPACE IF NOT EXISTS audit_log_systemWITH replication = {'class':'SimpleStrategy','replication_factor':1};CREATE TABLE IF NOT EXISTS audit_log_system.audit_logs (    service_name text,    log_date date,    log_time timestamp,    log_id uuid,    level text,    action text,    user_id text,    ip_address text,    message text,    details text,    PRIMARY KEY ((service_name, log_date), log_time, log_id)) WITH CLUSTERING ORDER BY (log_time DESC, log_id ASC);CREATE TABLE IF NOT EXISTS audit_log_system.audit_logs_by_service_level (    service_name text,    level text,    log_date date,    log_time timestamp,    log_id uuid,    action text,    user_id text,    ip_address text,    message text,    details text,    PRIMARY KEY ((service_name, level, log_date), log_time, log_id)) WITH CLUSTERING ORDER BY (log_time DESC, log_id ASC);
+13.6. Cơ chế TTL và chính sách hết hạn dữ liệu
+TTL (Time To Live) cho phép gắn thời gian tồn tại vào dữ liệu ngay khi INSERT. Đơn vị TTL trong CQL là giây. Khi hết TTL, dữ liệu hết hạn sẽ không còn được trả về như dữ liệu đang hoạt động; quá trình dọn dẹp vật lý liên quan đến cơ chế tombstone/compaction của Cassandra. Trong phạm vi đề tài, TTL 30 giây được dùng cho demo trực quan; TTL thực tế nếu triển khai thật sẽ phải dựa vào chính sách retention.
+INSERT INTO audit_log_system.audit_logs(service_name, log_date, log_time, log_id, level, action, user_id, message)VALUES ('Auth', '2026-10-09', toTimestamp(now()), uuid(), 'INFO',        'TTL_DEMO', 'demo-user', 'Temporary audit log')USING TTL 30;-- Kiểm tra ngay sau khi INSERTSELECT * FROM audit_log_system.audit_logsWHERE service_name='Auth' AND log_date='2026-10-09';-- Có thể kiểm tra TTL còn lại của một cột không phải khóaSELECT TTL(message) FROM audit_log_system.audit_logsWHERE service_name='Auth' AND log_date='2026-10-09'LIMIT 1;
+Khi demo, cần sử dụng một bản ghi riêng dành cho TTL để tránh ảnh hưởng bộ dữ liệu chính. Sau hơn 30 giây, chạy lại SELECT cùng partition để chứng minh bản ghi hết hạn.
+13.7. Danh mục truy vấn CQL cần minh chứng
+Bảng 13.4. Danh mục truy vấn CQL cần minh chứng khi bảo vệ
+Mã
+Mục tiêu
+Bảng sử dụng
+Điều kiện chính
+Q01
+Log theo Service + Date
+audit_logs
+service_name, log_date
+Q02
+Log theo khoảng thời gian trong ngày
+audit_logs
+service_name, log_date, log_time range
+Q03
+Service + Level + Date
+audit_logs_by_service_level
+service_name, level, log_date
+Q04
+Service + Level + Time
+audit_logs_by_service_level
+thêm log_time range
+Q05
+INFO của một service/ngày
+audit_logs_by_service_level
+level=INFO
+Q06
+WARN của một service/ngày
+audit_logs_by_service_level
+level=WARN
+Q07
+ERROR của một service/ngày
+audit_logs_by_service_level
+level=ERROR
+Q08
+Log mới nhất
+audit_logs
+ORDER theo clustering DESC, LIMIT N
+Q09
+INSERT TTL
+audit_logs
+USING TTL 30
+Q10
+TTL còn lại
+audit_logs
+TTL(message)
+Các truy vấn chính được thiết kế để sử dụng đầy đủ Partition Key, tránh quét không kiểm soát. Không nên dùng ALLOW FILTERING làm giải pháp chính vì nó có thể buộc Cassandra đọc nhiều dữ liệu ngoài nhu cầu truy vấn. Khi xuất hiện một mẫu truy vấn quan trọng mới, ưu tiên thiết kế thêm bảng query-first phù hợp.
+13.8. Luồng chức năng bằng sơ đồ
+Hình 13.3. Use Case Diagram - Hệ thống Audit Log
+Hình 13.4. Sequence Diagram - Tự động ghi Audit Log
+Hình 13.5. Sequence Diagram - Lọc Audit Log
+Hình 13.6. Sequence Diagram - Demo TTL
+Hình 13.7. Activity Diagram - Tự động ghi Audit Log
+Hình 13.8. Deployment Diagram - Môi trường demo
+13.9. Đặc tả CRUD Service và hợp đồng API chi tiết
+Bảng 13.5. Đặc tả CRUD Service và ánh xạ API - Frontend - Cassandra
+Chức năng
+Method
+Endpoint
+Frontend
+Cassandra
+Xem danh sách
+GET
+/api/services
+Service Table
+SELECT services
+Thêm
+POST
+/api/services
+Add Service Form
+INSERT services
+Cập nhật
+PUT
+/api/services/{id}
+Edit Service Form
+UPDATE/ghi lại theo khóa
+Xóa
+DELETE
+/api/services/{id}
+Confirm Delete
+DELETE services
+Ví dụ request tạo Service:
+{  "service_name": "Auth",  "description": "Authentication Service",  "status": true}
+Ví dụ response thành công:
+{  "success": true,  "message": "Service created successfully",  "data": {"service_id": "&lt;uuid&gt;"}}
+Hợp đồng API cần được cố định trước khi tích hợp để tránh Frontend dùng tên trường khác Backend/Cassandra. Tất cả lỗi validation phải trả status code và message rõ ràng; không trả password, access token hoặc dữ liệu nhạy cảm trong response log.
+13.10. Kế hoạch kiểm thử hiệu năng
+Barem đề tài có tiêu chí kiểm thử hiệu năng. Vì tài liệu SRS không được phép tự tạo số liệu thực nghiệm chưa đo, bảng dưới đây định nghĩa kế hoạch đo. Cột Kết quả thực tế được điền sau khi nhóm chạy hệ thống trên máy demo.
+Bảng 13.6. Kế hoạch kiểm thử hiệu năng
+Mã
+Kịch bản
+Quy mô
+Chỉ số cần đo
+Kết quả thực tế
+PT-01
+INSERT tuần tự Audit Log
+100 log
+Tổng thời gian, log/giây
+Chưa đo
+PT-02
+INSERT tuần tự Audit Log
+300 log
+Tổng thời gian, log/giây
+Chưa đo
+PT-03
+INSERT tuần tự Audit Log
+500 log
+Tổng thời gian, log/giây
+Chưa đo
+PT-04
+Query Service + Date
+400 log
+Response time (ms), số row
+Chưa đo
+PT-05
+Query Service + Level
+400 log
+Response time (ms), số row
+Chưa đo
+PT-06
+Query khoảng thời gian
+400 log
+Response time (ms), số row
+Chưa đo
+PT-07
+API danh sách Dashboard
+400 log
+End-to-end response time
+Chưa đo
+PT-08
+TTL
+1 log TTL 30s
+Thời điểm tồn tại/hết hạn
+Chưa đo
+Phương pháp đo đề xuất: dùng cùng máy và cùng phiên bản source; chạy mỗi truy vấn nhiều lần, ghi lại thời gian; nêu rõ cấu hình môi trường; không so sánh với hệ khác nếu chưa có điều kiện kiểm thử tương đương. Mục đích trong môn học là chứng minh chức năng và quan sát hiệu năng trên tập dữ liệu định mức, không tuyên bố benchmark production.
+13.11. Mẫu bảng ghi kết quả kiểm thử hiệu năng
+Bảng 13.7. Mẫu ghi nhận kết quả kiểm thử hiệu năng
+Ngày chạy
+Máy/Cấu hình
+Kịch bản
+Số bản ghi
+Lần 1
+Lần 2
+Lần 3
+Trung bình
+Kết luận
+____
+____
+PT-01
+100
+____
+____
+____
+____
+____
+____
+____
+PT-03
+500
+____
+____
+____
+____
+____
+____
+____
+PT-04
+400
+____
+____
+____
+____
+____
+____
+____
+PT-05
+400
+____
+____
+____
+____
+____
+13.12. Quy cách Dummy Data và giải thích 100/400 bản ghi
+Đề phân công riêng cho SV3 nạp 100 bản ghi log mẫu, trong khi định mức sản phẩm toàn nhóm yêu cầu tối thiểu 200-500 Audit Log từ ít nhất 4 dịch vụ. Vì vậy, 100 bản ghi được hiểu là phần việc trực tiếp của SV3; bộ dữ liệu tích hợp cuối cùng của nhóm được mở rộng lên khoảng 400 bản ghi để đáp ứng định mức và tạo đủ trường hợp truy vấn.
+Bảng 13.8. Quy tắc sinh dữ liệu mẫu Audit Log
+Thuộc tính sinh dữ liệu
+Quy tắc đề xuất
+Số lượng
+400 log tổng
+Service
+Auth/User/Order/Payment, khoảng 100 log/service
+Level
+Có đủ INFO/WARN/ERROR
+Thời gian
+Phân bố trên nhiều giờ/ngày demo
+Action
+Chọn theo danh sách Action chuẩn từng Service
+user_id
+Sinh từ tập ID giả, có thể null với system event
+IP
+Dùng IP giả hợp lệ, không dùng dữ liệu cá nhân thật
+message/details
+Dữ liệu minh họa, không chứa password/token/card data
+Script
+generateDummyData.js hoặc dummy_data.cql, lưu cùng source
+13.13. Danh sách ảnh minh chứng bắt buộc khi hoàn thiện báo cáo
+Các hình dưới đây phải được chụp từ hệ thống chạy thật. Tài liệu hiện không tự tạo ảnh giả; sau khi code và chạy thành công, nhóm chèn ảnh vào đúng vị trí tương ứng.
+Bảng 13.9. Danh sách hình ảnh minh chứng cần bổ sung
+Mã hình
+Ảnh cần chèn
+Mục đích minh chứng
+E01
+CQLSH kết nối Keyspace
+Cassandra hoạt động
+E02
+DESCRIBE TABLES / schema
+Cấu trúc dữ liệu
+E03
+nodetool status
+Trạng thái node
+E04
+INSERT/SELECT log mới
+Auto Audit Log
+E05
+TTL trước 30 giây
+Bản ghi tồn tại
+E06
+TTL sau 30 giây
+Bản ghi hết hạn
+E07
+Dashboard danh sách log
+Frontend tích hợp
+E08
+Dashboard lọc ERROR
+Truy vấn Service/Level/Time
+E09
+Log Detail
+Hiển thị đủ thông tin
+E10
+CRUD Service
+Giao diện cấu hình danh mục
+E11
+Kết quả Performance Test
+Bằng chứng kiểm thử hiệu năng
+13.14. Ma trận barem - minh chứng - người phụ trách
+Bảng 13.10. Ma trận barem - minh chứng - người phụ trách
+Tiêu chí
+Nội dung cần trình bày
+Minh chứng
+Phụ trách chính
+Cassandra phù hợp Audit Log
+Write-heavy, phân tán, scale-out, TTL, query-first
+Chương 13.2 + Data Model
+SV1
+Partition/Clustering Key
+((service_name, log_date), log_time, log_id)
+Schema/CQLSH
+SV1
+API + CRUD
+Nhận log và quản lý Service
+Postman/UI
+SV1 + SV3
+TTL
+INSERT USING TTL 30
+SELECT trước/sau
+SV2
+CQL nâng cao
+Service/Level/Time
+queries.cql
+SV2
+Dummy Data
+200-500, &gt;=4 service, 3 level
+Script + COUNT/SELECT
+SV2 + SV3
+Hiệu năng
+Đo insert/query
+Bảng PT + ảnh kết quả
+SV2 + SV3
+Dashboard/demo
+Lọc ERROR, xem detail, nodetool
+Dashboard + terminal
+SV3
+13.15. Checklist hoàn thiện trước khi nộp
+Cập nhật mục lục, danh mục hình và danh mục bảng trong Microsoft Word trước khi xuất bản cuối.
+Chèn ảnh thật CQLSH, nodetool status, TTL, Dashboard và CRUD; không dùng ảnh minh họa thay cho kết quả chạy.
+Điền số liệu kiểm thử hiệu năng sau khi thực nghiệm, không để số liệu giả.
+Kiểm tra đủ 300-500 log cuối cùng, tối thiểu 4 Service và đủ INFO/WARN/ERROR.
+Đảm bảo code, database.cql, queries.cql, dummy data và báo cáo cùng một phiên bản.
+Chạy toàn bộ kịch bản demo ít nhất một lần và chuẩn bị lệnh CQL dự phòng.
+Kiểm tra không có password, token hoặc dữ liệu thanh toán nhạy cảm trong Audit Log.
+Rà soát đánh số chương, hình, bảng, Use Case, Test Case và Product Backlog trước khi nộp.
+CHƯƠNG 14: BỔ SUNG YÊU CẦU KỸ THUẬT VÀ KIỂM SOÁT CHẤT LƯỢNG
+Chương này bổ sung các quy định kỹ thuật giúp hệ thống có tính nhất quán và khả năng vận hành tốt hơn, bao gồm chống ghi trùng log, retention, Consistency Level, phân trang, xác thực Admin, chuẩn hóa Level, kiểm soát chất lượng dữ liệu và các chỉ số phi chức năng có thể đo.
+Chương này bổ sung các nội dung chưa được yêu cầu trực tiếp trong đề bài nhưng cần thiết để bản SRS chặt chẽ hơn, tránh mơ hồ khi triển khai và kiểm thử. Các mục dưới đây được xem là đề xuất kỹ thuật của nhóm; khi hiện thực cần thống nhất với mã nguồn và môi trường chạy thực tế.
+14.1. Tính bất biến, định danh và chống ghi trùng Audit Log
+Audit Log sau khi được ghi thành công được xem là dữ liệu lịch sử và không cung cấp chức năng sửa nội dung log trên giao diện Admin.
+Mỗi log phải có log_id duy nhất. Backend chịu trách nhiệm sinh UUID nếu nguồn gửi log không cung cấp.
+Khi một thao tác nghiệp vụ bị gửi lặp do retry, Backend nên sử dụng request_id/event_id nếu có để hạn chế ghi trùng cùng một sự kiện.
+Thời gian log nên lấy từ Backend làm nguồn chuẩn để tránh sai lệch đồng hồ giữa các Service. Nếu nhận thời gian từ Service, Backend phải validate định dạng.
+Trong báo cáo và giao diện cần thống nhất timezone. Đề xuất lưu thời gian chuẩn và hiển thị theo Asia/Ho_Chi_Minh trong Dashboard.
+14.2. Chính sách lưu giữ dữ liệu và TTL
+TTL 30 giây trong đề tài chỉ dùng để chứng minh cơ chế tự hết hạn. Không nên áp TTL 30 giây cho toàn bộ dữ liệu demo vì sẽ làm mất dữ liệu phục vụ truy vấn và bảo vệ. Nhóm nên phân biệt hai loại dữ liệu:
+Bảng 14.1. Chính sách lưu giữ dữ liệu và TTL theo nhóm dữ liệu
+Nhóm dữ liệu
+TTL
+Mục đích
+Quy tắc
+Audit Log chính
+Không đặt TTL ngắn trong demo
+Dùng cho Dashboard, truy vấn và kiểm thử
+Giữ đủ 300-500 log đến khi bảo vệ
+Audit Log TTL demo
+30 giây
+Chứng minh Time-To-Live
+Dùng log_id/action riêng, không ảnh hưởng dữ liệu chính
+Dữ liệu triển khai thật
+Theo chính sách retention
+Kiểm soát dung lượng lưu trữ
+Chỉ cấu hình sau khi có yêu cầu nghiệp vụ cụ thể
+14.3. Consistency Level và chiến lược đọc/ghi Cassandra
+Đề bài không quy định Consistency Level cụ thể. Để tránh mô tả sai với cấu hình thực tế, báo cáo nên ghi đây là tham số triển khai. Với môi trường một node phục vụ môn học, việc lựa chọn Consistency Level không thể hiện đầy đủ khả năng chịu lỗi của cluster. Khi mở rộng nhiều node, nhóm có thể đánh giá ONE/LOCAL_ONE hoặc QUORUM tùy yêu cầu cân bằng giữa độ trễ và tính nhất quán.
+Không tuyên bố hệ thống đạt High Availability nếu demo chỉ chạy một node Cassandra.
+Nếu dùng SimpleStrategy + replication_factor = 1, phải ghi rõ đây là cấu hình demo.
+Khi triển khai nhiều node, ưu tiên NetworkTopologyStrategy và ghi rõ replication factor/datacenter thực tế.
+14.4. Chuẩn hóa hợp đồng API và phân trang
+Để Frontend và Backend tích hợp ổn định, tất cả API nên dùng một cấu trúc response thống nhất. Đây là đề xuất chuẩn hóa cho phiên bản triển khai:
+{  "success": true,  "message": "Request processed successfully",  "data": {},  "meta": {"next_cursor": null}}
+Bảng 14.2. Chuẩn hóa API, input, response và lỗi chính
+API
+Method
+Input chính
+Thành công
+Lỗi chính
+Ghi chú
+/api/logs
+POST
+service_name, level, action, message
+201
+400/500
+Backend sinh log_id/time nếu cần
+/api/logs
+GET
+service, level, date, from, to, cursor, limit
+200
+400/500
+Không tải toàn bộ dữ liệu một lần
+/api/logs/{id}
+GET
+id + thông tin định vị partition nếu thiết kế yêu cầu
+200
+404
+Cassandra query nên có khóa phù hợp
+/api/services
+GET
+-
+200
+500
+Danh sách Service
+/api/services
+POST
+name, description, status
+201
+400/409
+Tên nên duy nhất
+/api/services/{id}
+PUT
+description/status/...
+200
+400/404
+Validate trước khi cập nhật
+/api/services/{id}
+DELETE
+id
+200/204
+404
+Có xác nhận trên UI
+Đối với danh sách log, ưu tiên cursor/paging thay vì offset lớn. Cassandra phù hợp hơn với việc tiếp tục đọc từ khóa cuối của trang trước thay vì OFFSET như CSDL quan hệ.
+14.5. Xác thực Admin và kiểm soát truy cập
+SRS đã có yêu cầu Admin đăng nhập nhưng chưa cố định cơ chế xác thực. Khi triển khai, nhóm cần chọn một cơ chế cụ thể (session hoặc token) và cập nhật lại báo cáo theo mã nguồn thực tế. Các nguyên tắc bắt buộc:
+Chỉ Admin đã xác thực mới được truy cập Dashboard và CRUD Service.
+Không lưu mật khẩu, access token, refresh token hoặc dữ liệu thẻ thanh toán trong Audit Log.
+Thông tin nhạy cảm trong details phải được loại bỏ hoặc mask trước khi ghi.
+API lỗi xác thực trả 401; API không đủ quyền trả 403 nếu hệ thống có nhiều vai trò.
+14.6. Quy tắc ánh xạ mức độ INFO/WARN/ERROR
+Bảng 14.3. Quy tắc ánh xạ mức độ INFO, WARN và ERROR
+Level
+Ý nghĩa
+Ví dụ
+Không nên dùng cho
+INFO
+Sự kiện bình thường, thao tác hoàn tất
+LOGIN_SUCCESS, CREATE_ORDER thành công
+Lỗi cần can thiệp
+WARN
+Tình huống bất thường nhưng hệ thống vẫn xử lý được
+LOGIN_FAILED, dữ liệu gần ngưỡng
+Sự cố làm thao tác thất bại hoàn toàn
+ERROR
+Lỗi làm chức năng thất bại hoặc cần điều tra
+PAYMENT_FAILED do lỗi hệ thống, DB/API exception
+Các hoạt động bình thường
+14.7. Quy tắc chất lượng dữ liệu Audit Log
+Bảng 14.4. Quy tắc kiểm tra chất lượng dữ liệu Audit Log
+Thuộc tính
+Validation
+Xử lý khi sai
+Lý do
+service_name
+Không rỗng, khớp Service đang theo dõi
+400 hoặc từ chối ghi
+Bảo đảm phân vùng và thống kê đúng
+level
+Chỉ INFO/WARN/ERROR
+400
+Tránh dữ liệu level tự do
+action
+Không rỗng, dùng quy ước UPPER_SNAKE_CASE
+400
+Dễ truy vết và thống kê
+log_time
+Timestamp hợp lệ
+Backend sinh thời gian chuẩn hoặc 400
+Phục vụ clustering/time range
+message
+Không rỗng, giới hạn hợp lý
+400
+Bảo đảm log có ý nghĩa
+details
+JSON/text hợp lệ; không chứa bí mật
+Mask/từ chối tùy trường hợp
+Bảo mật và khả năng đọc
+14.8. Tiêu chí phi chức năng có thể đo được
+Các ngưỡng dưới đây là mục tiêu nghiệm thu cho phạm vi dữ liệu môn học, không phải benchmark production. Nếu máy demo không đáp ứng, nhóm cần ghi kết quả thực tế và giải thích thay vì sửa số liệu.
+Bảng 14.5. Tiêu chí phi chức năng có thể đo được
+Mã
+Chỉ số
+Mục tiêu đề xuất
+Cách kiểm tra
+NFR-M01
+Tải Dashboard với 300-500 log
+Phản hồi trong khoảng chấp nhận được để demo trực tiếp; mục tiêu &lt;= 2 giây trên máy nhóm
+Đo thời gian API + hiển thị
+NFR-M02
+Query Service + Level + Date
+Mục tiêu &lt;= 1 giây với bộ dữ liệu demo
+Đo nhiều lần và lấy trung bình
+NFR-M03
+Ghi một Audit Log
+Không lỗi và xuất hiện khi truy vấn ngay sau thao tác
+POST + SELECT/CQLSH
+NFR-M04
+Ổn định khi query rỗng/lỗi validation
+Không crash Backend
+Test negative cases
+NFR-M05
+Khả dụng giao diện
+Không vỡ layout ở độ phân giải laptop nhóm sử dụng
+Kiểm tra trực quan
+14.9. Các Test Case bổ sung nên có
+Bảng 14.6. Danh sách Test Case bổ sung
+Mã
+Nhóm
+Kịch bản
+Kết quả mong đợi
+Ưu tiên
+TC-21
+Dữ liệu
+Hai log cùng log_time nhưng khác log_id
+Cả hai được lưu và truy vấn được
+Must
+TC-22
+Bảo mật
+message/details chứa password/token giả lập
+Dữ liệu bị mask hoặc request bị từ chối theo policy
+Must
+TC-23
+Paging
+Danh sách vượt limit một trang
+Có next cursor/trang tiếp theo, không trùng/mất log
+Should
+TC-24
+Retry
+Gửi lại cùng event_id/request_id nếu có hỗ trợ
+Không tạo trùng ngoài chính sách
+Could
+TC-25
+Service trạng thái tắt
+Gửi log từ Service bị disable
+Xử lý đúng policy đã chọn và có thông báo
+Should
+TC-26
+Timestamp
+Timestamp sai định dạng
+400 hoặc Backend thay bằng server time theo policy
+Must
+TC-27
+API Auth
+Gọi CRUD Service khi chưa đăng nhập
+401
+Must
+TC-28
+Concurrent Write
+Gửi nhiều log liên tiếp
+Không crash, dữ liệu đủ theo số lượng gửi
+Should
+14.10. Yêu cầu môi trường triển khai và khả năng tái lập
+Trước khi nộp, nhóm nên bổ sung một bảng cấu hình môi trường đúng với máy đã dùng để chạy demo. Không nên ghi phiên bản ước đoán. Bảng sau để điền theo thực tế:
+Bảng 14.7. Cấu hình môi trường triển khai và demo
+Thành phần
+Phiên bản/cấu hình thực tế
+Ghi chú
+Apache Cassandra
+[Điền sau khi kiểm tra]
+Phiên bản dùng demo
+Java/JDK
+[Điền sau khi kiểm tra]
+Phiên bản tương thích Cassandra
+Backend runtime
+[Điền Node.js/Java/.NET...]
+Đúng theo source nhóm
+Frontend
+[Điền framework/version]
+Đúng theo source nhóm
+OS
+[Điền Windows/Linux]
+Máy demo
+Cassandra node
+1 node hoặc số node thực tế
+Không mô tả cluster nhiều node nếu không chạy thật
+14.11. Nội dung bắt buộc phải cập nhật sau khi hệ thống chạy thật
+Ảnh CQLSH kết nối Keyspace và SELECT log.
+Ảnh nodetool status từ máy demo.
+Ảnh Dashboard có dữ liệu thật và bộ lọc ERROR.
+Ảnh CRUD Service.
+Ảnh TTL trước khi hết hạn và sau khi hết hạn.
+Số liệu kiểm thử hiệu năng thực tế; không để “Chưa đo” trong bản nộp cuối nếu giảng viên yêu cầu phần này.
+Phiên bản Cassandra, Java, Backend, Frontend và hệ điều hành thực tế.
+Link repository hoặc hướng dẫn chạy nếu quy định môn học yêu cầu nộp source.
+14.12. Ma trận kiểm tra độ đầy đủ cuối cùng
+Bảng 14.8. Ma trận kiểm tra độ đầy đủ cuối cùng
+Nhóm nội dung
+Tình trạng trong SRS
+Cần cập nhật khi code chạy
+Ghi chú
+Yêu cầu chính thức của đề
+Đã bao phủ
+Không
+Cassandra, CRUD, TTL, CQL, Dummy Data, Demo
+Data Model Cassandra
+Đã có
+Đối chiếu với script thật
+Khóa phải khớp database.cql
+Use Case/API/NFR/BR
+Đã có
+Đối chiếu tên endpoint và field
+Không để tài liệu lệch source
+Hiệu năng
+Có kế hoạch và mục tiêu
+Có
+Điền số đo thật
+Minh chứng trực quan
+Có danh sách yêu cầu
+Có
+Chèn ảnh chạy thật
+Môi trường triển khai
+Có khung
+Có
+Điền version thật
+Bảo mật dữ liệu log
+Đã bổ sung
+Kiểm tra code
+Mask dữ liệu nhạy cảm
+Paging/duplicate/timezone
+Đã bổ sung đề xuất
+Tùy phạm vi triển khai
+Nếu không làm, ghi rõ ngoài MVP
+Kết luận rà soát: Sau các bổ sung trên, tài liệu đã bao phủ đầy đủ yêu cầu chính thức của Đề tài 10 và bổ sung các nội dung SRS cần thiết để giảm mơ hồ khi triển khai. Những phần duy nhất chưa thể hoàn tất chỉ bằng tài liệu là số liệu hiệu năng, ảnh minh chứng và phiên bản môi trường thực tế; các nội dung này phải lấy từ hệ thống chạy thật trước khi nộp cuối.
+CHƯƠNG 15: HOÀN THIỆN ĐẶC TẢ VÀ HỒ SƠ NGHIỆM THU
+Chương 15 tập trung vào khả năng truy vết và nghiệm thu tài liệu. Các bảng từ điển dữ liệu, ma trận truy vết, runbook và checklist minh chứng giúp nhóm kiểm soát phiên bản, tái lập môi trường và chứng minh từng yêu cầu bằng kết quả thực tế khi hệ thống đã chạy.
+Chương này tổng hợp những thành phần còn thiếu khi đối chiếu bản SRS với yêu cầu chính thức của Đề tài 10 và với yêu cầu về tính truy vết của một tài liệu đặc tả. Nội dung không thay đổi phạm vi chức năng đã xác định; mục tiêu là làm rõ cách nghiệm thu, cách đo và các bằng chứng phải có khi bảo vệ.
+15.1. Kiểm soát tài liệu và lịch sử phiên bản
+Để tránh nhầm lẫn giữa nhiều bản Word trong quá trình nhóm cùng chỉnh sửa, mỗi bản nộp nên có thông tin phiên bản, ngày cập nhật, nội dung thay đổi và người phụ trách. Bảng dưới đây được dùng làm bản ghi kiểm soát tài liệu; nhóm có thể cập nhật tên người thực hiện ở lần chỉnh sửa cuối.
+Bảng 15.1. Lịch sử phiên bản tài liệu
+Phiên bản
+Ngày
+Nội dung thay đổi
+Trạng thái
+1.0
+10/2026
+Khởi tạo SRS theo phạm vi Audit Log và Cassandra
+Đã hoàn thành
+1.1
+10/2026
+Bổ sung Use Case, API, Data Model, Test Case và Product Backlog
+Đã hoàn thành
+1.2
+10/2026
+Bổ sung đối chiếu barem, TTL, hiệu năng, sơ đồ và kiểm soát chất lượng
+Đã hoàn thành
+1.3
+10/2026
+Rà soát cuối: truy vết đầy đủ, data dictionary, API contract, runbook và checklist nghiệm thu
+Bản đề xuất nộp
+15.2. Ma trận truy vết đầy đủ cho toàn bộ yêu cầu chức năng
+Ma trận ở Chương 10 tập trung vào các yêu cầu cốt lõi. Để tránh bỏ sót khi kiểm thử, bảng dưới đây mở rộng truy vết cho toàn bộ FR-01 đến FR-24. Cột “Tiêu chí chấp nhận” mô tả điều kiện tối thiểu để đánh dấu yêu cầu là đạt.
+Bảng 15.2. Ma trận truy vết đầy đủ yêu cầu chức năng
+FR
+Yêu cầu
+Use Case
+API/Thành phần
+Tiêu chí chấp nhận
+FR-01
+Đăng nhập Admin
+UC-01
+Màn hình Login/Auth middleware
+Đăng nhập đúng vào Dashboard; sai thông tin bị từ chối
+FR-02
+Tiếp nhận Audit Log
+UC-08
+API-01 / POST /api/logs
+Log hợp lệ được nhận và có log_id
+FR-03
+Tự động tạo Audit Log
+UC-08
+Business Service + Audit Logger
+Thao tác mẫu sinh log tương ứng không cần INSERT thủ công
+FR-04
+Lưu Audit Log vào Cassandra
+UC-08
+audit_logs và bảng truy vấn phụ
+SELECT đúng partition thấy log vừa ghi
+FR-05
+Xem danh sách Audit Log
+UC-02
+API-02 + Dashboard
+Hiển thị Time/Service/Level/Action/User/Message
+FR-06
+Lọc theo Service
+UC-03
+API-02
+Kết quả chỉ thuộc Service đã chọn
+FR-07
+Lọc theo Level
+UC-03
+API-02
+Kết quả chỉ thuộc INFO/WARN/ERROR đã chọn
+FR-08
+Lọc ngày/khoảng thời gian
+UC-03
+API-02
+Kết quả nằm trong From-To; From&gt;To bị từ chối
+FR-09
+Kết hợp điều kiện lọc
+UC-03
+API-02 + bảng query-first
+Service + Level + Time trả đúng dữ liệu
+FR-10
+Xem chi tiết Audit Log
+UC-04
+API-03
+Hiển thị đủ trường chi tiết hoặc 404 khi không tồn tại
+FR-11
+Thêm Service
+UC-05
+API-05
+Service hợp lệ được tạo
+FR-12
+Xem danh sách Service
+UC-05/06/07
+API-04
+Danh sách Service phản ánh dữ liệu lưu trữ
+FR-13
+Cập nhật Service
+UC-06
+API-06
+Tên/mô tả/trạng thái cập nhật thành công
+FR-14
+Xóa Service
+UC-07
+API-07
+Có xác nhận; Service bị xóa/không còn hiển thị
+FR-15
+Ghi log với TTL
+UC-09
+CQL INSERT USING TTL
+TTL được gán trực tiếp trong câu INSERT
+FR-16
+Kiểm tra TTL
+UC-10
+CQL SELECT/TTL
+Trước TTL còn log; sau TTL SELECT không trả bản ghi
+FR-17
+Sinh dữ liệu mẫu
+-
+Dummy data script
+Có 300-500 log, &gt;=4 Service, đủ 3 Level
+FR-18
+Kiểm tra CQLSH
+UC-11
+cqlsh
+Kết nối Keyspace và chạy được SELECT
+FR-19
+Kiểm tra nodetool status
+UC-11
+nodetool
+Node demo ở trạng thái hoạt động
+FR-20
+Dashboard Summary
+UC-02
+Dashboard
+Hiển thị tổng log và số INFO/WARN/ERROR theo dữ liệu hiện có
+FR-21
+Reset bộ lọc
+UC-03
+Dashboard
+Reset đưa filter về trạng thái mặc định
+FR-22
+Thông báo không có dữ liệu
+UC-02/03
+Dashboard/API
+Query rỗng hiển thị empty state, không crash
+FR-23
+Phân trang danh sách log
+UC-02
+API-02 + Dashboard
+Không tải toàn bộ dữ liệu một lần; chuyển trang/cursor hoạt động
+FR-24
+Ghi nhận lỗi hệ thống
+UC-08
+Error handler/Audit Logger
+Lỗi quan trọng có thể tạo ERROR log mà không làm Backend crash
+15.3. Từ điển dữ liệu và quy tắc chuẩn hóa
+Từ điển dữ liệu dưới đây là nguồn thống nhất để Frontend, Backend, script CQL và dữ liệu mẫu sử dụng cùng một tên trường, kiểu dữ liệu và quy tắc. Nếu code thực tế dùng quy ước camelCase ở lớp API, nhóm phải ghi rõ phép ánh xạ sang tên cột Cassandra.
+Bảng 15.3. Từ điển dữ liệu Audit Log
+Trường
+Kiểu
+Bắt buộc
+Quy tắc
+Ví dụ
+log_id
+uuid
+Có
+Duy nhất trong hệ thống; Backend sinh nếu request không cung cấp
+f47ac10b-...
+service_name
+text
+Có
+Không rỗng; khớp Service đang được theo dõi
+Payment
+log_date
+date
+Có
+Ngày lấy từ log_time theo timezone thống nhất; dùng trong Partition Key
+2026-10-09
+log_time
+timestamp
+Có
+Thời điểm phát sinh; nguồn thời gian ưu tiên Backend/server
+2026-10-09T13:40:12+07:00
+level
+text
+Có
+Chỉ INFO, WARN, ERROR
+ERROR
+action
+text
+Có
+UPPER_SNAKE_CASE, dùng danh sách Action chuẩn
+PAYMENT_FAILED
+user_id
+text
+Không
+Có thể null với sự kiện hệ thống
+U001
+ip_address
+text
+Không
+IPv4/IPv6 hợp lệ nếu có thu thập
+192.168.1.10
+message
+text
+Có
+Mô tả ngắn, không chứa password/token/card data
+Payment gateway timeout
+details
+text
+Không
+JSON/text bổ sung; phải loại bỏ dữ liệu bí mật
+{"orderId":"ORD001"}
+Bảng 15.4. Từ điển dữ liệu Service
+Trường
+Kiểu
+Bắt buộc
+Quy tắc
+service_id
+uuid
+Có
+Khóa định danh Service
+service_name
+text
+Có
+Không rỗng; nên duy nhất về mặt nghiệp vụ
+description
+text
+Không
+Mô tả chức năng Service
+status
+boolean
+Có
+true: đang theo dõi; false: tạm ngưng theo dõi
+created_at
+timestamp
+Có
+Thời gian tạo do Backend sinh
+updated_at
+timestamp
+Có
+Cập nhật mỗi lần thay đổi Service
+15.4. Chuẩn phản hồi API, phân trang và mã lỗi
+Ngoài endpoint đã đặc tả ở Chương 6, nhóm nên thống nhất một cấu trúc response để Frontend không phải xử lý nhiều định dạng khác nhau. Các JSON dưới đây là mẫu hợp đồng; tên trường có thể điều chỉnh theo code thực tế nhưng phải thống nhất trong toàn hệ thống.
+Mẫu response thành công:
+{  "success": true,  "message": "OK",  "data": { }}
+Mẫu response lỗi:
+{  "success": false,  "error": {    "code": "INVALID_LEVEL",    "message": "level chỉ nhận INFO, WARN hoặc ERROR"  }}
+Mẫu response phân trang/cursor cho danh sách log:
+{  "success": true,  "data": [ ... ],  "page": {    "limit": 20,    "next_cursor": "...",    "has_more": true  }}
+HTTP 200: truy vấn thành công; danh sách rỗng vẫn có thể trả 200 với data=[].
+HTTP 201: tạo Audit Log/Service thành công.
+HTTP 400: thiếu trường bắt buộc, Level sai hoặc khoảng thời gian không hợp lệ.
+HTTP 401/403: chưa đăng nhập hoặc không đủ quyền quản trị, nếu module xác thực được triển khai.
+HTTP 404: Log hoặc Service không tồn tại.
+HTTP 500/503: lỗi nội bộ hoặc Cassandra tạm thời không khả dụng.
+15.5. Quy trình đo hiệu năng và cách ghi nhận kết quả
+Barem có nội dung kiểm thử hiệu năng nhưng tài liệu không nên tự điền số liệu khi chưa chạy thật. Nhóm cần dùng cùng một máy demo, cùng phiên bản code và cùng bộ dữ liệu để các lần đo có thể so sánh. Mỗi test nên chạy tối thiểu 3 lần, bỏ lần warm-up nếu cần và ghi lại thời gian trung bình; nếu công cụ hỗ trợ thì ghi thêm p95.
+Bảng 15.5. Kịch bản và chỉ số đo hiệu năng
+Mã
+Kịch bản
+Quy mô
+Chỉ số cần ghi
+PT-01
+INSERT tuần tự 100 log
+100
+Tổng thời gian, log/s, lỗi
+PT-02
+INSERT tuần tự 300 log
+300
+Tổng thời gian, log/s, lỗi
+PT-03
+INSERT tuần tự 500 log
+500
+Tổng thời gian, log/s, lỗi
+PT-04
+Query Service + Date
+Bộ 400/500 log
+Thời gian phản hồi, số dòng
+PT-05
+Query Service + Level + Date
+Bộ 400/500 log
+Thời gian phản hồi, số dòng
+PT-06
+Query Service + khoảng thời gian
+Bộ 400/500 log
+Thời gian phản hồi, số dòng
+Ghi cấu hình máy đo: OS, CPU/RAM, Java, Cassandra, Backend runtime và cách chạy Cassandra.
+Không so sánh số liệu giữa các máy khác nhau nếu chưa ghi rõ điều kiện.
+Mỗi kết quả phải có ảnh/log hoặc file output làm bằng chứng.
+Không kết luận “Cassandra nhanh hơn SQL” từ bộ dữ liệu demo nếu chưa thực hiện benchmark đối chứng cùng điều kiện.
+Nếu chưa đo trước ngày nộp, giữ bảng kết quả ở trạng thái “Chưa đo” thay vì tự tạo số liệu.
+15.6. Runbook cài đặt, khởi động và phục hồi demo
+Để một thành viên khác có thể chạy lại bài mà không phụ thuộc máy người viết code, nhóm cần lưu một runbook ngắn. Các lệnh cụ thể phải cập nhật theo source thực tế của nhóm.
+Bảng 15.6. Runbook cài đặt, khởi động và phục hồi demo
+Bước
+Công việc
+Điều kiện hoàn thành
+1
+Kiểm tra môi trường
+Xác nhận Java/Cassandra/runtime Backend/Frontend đúng phiên bản đã ghi trong báo cáo.
+2
+Khởi động Cassandra
+Khởi động service/process Cassandra; chạy nodetool status để kiểm tra node.
+3
+Tạo cấu trúc dữ liệu
+Chạy database.cql; kiểm tra keyspace và các table bằng CQLSH.
+4
+Nạp dữ liệu mẫu
+Chạy dummy data script; kiểm tra đủ 300-500 log và 4 Service.
+5
+Khởi động Backend
+Nạp cấu hình contact point/keyspace; kiểm tra API health hoặc request thử.
+6
+Khởi động Frontend
+Mở Dashboard; kiểm tra danh sách log và CRUD Service.
+7
+Chạy demo Auto Log
+Thực hiện Login/CRUD hoặc thao tác nghiệp vụ rồi kiểm tra CQLSH.
+8
+Chạy demo TTL
+Dùng bản ghi riêng TTL=30, SELECT trước và sau TTL.
+9
+Chạy demo Dashboard
+Lọc ERROR theo Service và khoảng thời gian; mở chi tiết.
+10
+Phục hồi khi demo lỗi
+Dùng ảnh/kết quả dự phòng; kiểm tra port, contact point, keyspace và dữ liệu mẫu trước khi khởi động lại.
+15.7. Checklist minh chứng nghiệm thu
+Bảng 15.7. Checklist minh chứng nghiệm thu
+Mã
+Bằng chứng
+Phụ trách
+Trạng thái hiện tại
+EV-01
+CQLSH kết nối thành công và DESCRIBE/SELECT được
+SV1/SV3
+Chưa đính kèm - bổ sung sau khi chạy thật
+EV-02
+Ảnh cấu trúc keyspace/table và PRIMARY KEY
+SV1
+Chưa đính kèm - bổ sung sau khi chạy thật
+EV-03
+Ảnh thao tác nghiệp vụ tạo Auto Audit Log
+SV1
+Chưa đính kèm - bổ sung sau khi chạy thật
+EV-04
+Ảnh SELECT thấy log vừa sinh trong CQLSH
+SV1/SV3
+Chưa đính kèm - bổ sung sau khi chạy thật
+EV-05
+Ảnh TTL trước 30 giây
+SV2
+Chưa đính kèm - bổ sung sau khi chạy thật
+EV-06
+Ảnh TTL sau 30 giây
+SV2
+Chưa đính kèm - bổ sung sau khi chạy thật
+EV-07
+Ảnh Dashboard danh sách log
+SV3
+Chưa đính kèm - bổ sung sau khi chạy thật
+EV-08
+Ảnh Dashboard lọc ERROR
+SV3
+Chưa đính kèm - bổ sung sau khi chạy thật
+EV-09
+Ảnh CRUD Service
+SV1/SV3
+Chưa đính kèm - bổ sung sau khi chạy thật
+EV-10
+Ảnh nodetool status
+SV3
+Chưa đính kèm - bổ sung sau khi chạy thật
+EV-11
+Bảng kết quả performance test
+Nhóm
+Chưa đo - điền kết quả thực nghiệm
+EV-12
+Ảnh/log chứng minh dummy data đủ định mức
+SV2/SV3
+Chưa đính kèm - bổ sung sau khi chạy thật
+15.8. Đối chiếu cuối với yêu cầu chính thức của Đề tài 10
+Kết luận rà soát: về mặt đặc tả, phạm vi chức năng và thiết kế Cassandra, tài liệu hiện đã bao phủ đầy đủ các yêu cầu chính thức của đề tài. Phần chưa thể hoàn tất chỉ là bằng chứng thực nghiệm phụ thuộc hệ thống chạy thật (ảnh giao diện/CQLSH/nodetool, dữ liệu đo hiệu năng và phiên bản môi trường thực tế). Các mục này đã được tạo vị trí và checklist để nhóm điền sau khi triển khai.
+Các kết quả chưa đo được như thời gian hiệu năng thực tế, phiên bản môi trường hoặc ảnh minh chứng phải được cập nhật từ hệ thống chạy thật trước khi nộp. Không sử dụng số liệu giả để hoàn thiện báo cáo.
+Trước khi nghiệm thu, nhóm cần xác nhận đồng thời bốn nhóm điều kiện: (1) Cassandra và CQLSH hoạt động; (2) Backend ghi/đọc được log và CRUD Service; (3) Dashboard lọc đúng Service, Level và thời gian; (4) TTL, Dummy Data, nodetool status và các Test Case đã có bằng chứng. Nếu một chức năng chỉ có trong tài liệu nhưng chưa chạy được trên phiên bản demo thì phải ghi rõ trạng thái thay vì coi là đã hoàn thành.
+Bảng 15.8. Đối chiếu cuối với yêu cầu chính thức của Đề tài 10
+Yêu cầu/Barem
+Trạng thái
+Vị trí/Bổ sung
+Giải trình Cassandra phù hợp log liên tục
+Có
+Chương 13.2; Chương 5
+Partition Key (service_name, log_date)
+Có
+Chương 5.3, 5.6, 13.4
+Clustering Key log_time DESC
+Có
+Chương 5.3, 13.4
+API tiếp nhận Audit Log
+Có
+FR-02; Chương 6
+Admin cấu hình danh mục Service
+Có
+FR-11..14; Chương 7
+TTL trực tiếp trong INSERT
+Có
+Chương 13.6; UC-09/10
+CQL lọc Service/Level/Time
+Có
+Chương 5.8; 13.7
+Dummy Data 200-500, &gt;=4 Service, đủ Level
+Có - thiết kế 400
+Chương 11.1; 13.12
+nodetool status
+Có trong yêu cầu/demo
+FR-19; UC-11; Chương 11
+Demo sống Auto Log -&gt; CQLSH
+Có kịch bản
+Chương 11.2
+Demo TTL 30 giây
+Có kịch bản
+Chương 11.3
+Dashboard lọc ERROR
+Có kịch bản
+Chương 11.4
+Kết quả chạy thật/ảnh minh chứng
+Chưa thể hoàn tất trong SRS
+Bổ sung EV-01..EV-12 sau khi hệ thống chạy
+Số liệu hiệu năng thực tế
+Chưa đo
+Điền theo quy trình 15.5
+CHƯƠNG 16: BỔ SUNG NỘI DUNG VẬN HÀNH VÀ QUẢN TRỊ AUDIT LOG
+Chương cuối mở rộng góc nhìn từ phát triển sang vận hành. Nội dung mô tả vòng đời Audit Log, chiến lược lưu giữ và truy vấn nhiều ngày, phương án sao lưu/phục hồi, các chỉ số giám sát cũng như nguyên tắc bảo vệ dữ liệu nhạy cảm trước khi hệ thống được xem là sẵn sàng nghiệm thu.
+16.1. Vòng đời của một Audit Log
+Một Audit Log trải qua các giai đoạn: phát sinh sự kiện nghiệp vụ, chuẩn hóa dữ liệu log, gán định danh và thời gian, kiểm tra dữ liệu nhạy cảm, ghi vào các bảng Cassandra phục vụ truy vấn, cung cấp cho API/Dashboard, áp dụng thời gian lưu giữ và cuối cùng hết hạn theo chính sách TTL nếu được cấu hình. Việc mô tả vòng đời giúp nhóm kiểm soát rõ trách nhiệm của từng tầng và tránh tình trạng log được tạo nhưng không thể truy vấn hoặc không tuân thủ chính sách lưu giữ.
+Trong luồng ghi, cùng một log có thể được nhân bản vào audit_logs và audit_logs_by_service_level để phục vụ các mẫu truy vấn khác nhau. Các bản sao phải dùng cùng log_id và cùng nội dung nghiệp vụ. Nếu một lần ghi bị lỗi một phần, Backend phải ghi nhận lỗi kỹ thuật và có cơ chế retry có kiểm soát hoặc đánh dấu để kiểm tra lại, tránh tạo dữ liệu không nhất quán.
+16.2. Chính sách lưu giữ dữ liệu và phân loại TTL
+TTL 30 giây trong đề tài chỉ phục vụ minh họa cơ chế tự hết hạn của Cassandra. Đối với dữ liệu vận hành thông thường, thời gian lưu giữ nên được xác định theo mục đích của từng loại log. Ví dụ, log INFO có thể có thời gian lưu ngắn hơn log WARN/ERROR; các log phục vụ điều tra sự cố có thể cần lưu lâu hơn. Trong phạm vi môn học, nhóm chỉ cần mô tả chính sách và minh họa bằng TTL 30 giây, không cần xây dựng hệ thống retention phức tạp.
+Nguyên tắc đề xuất: không áp dụng TTL demo cho bộ dữ liệu chính; dùng bản ghi riêng có nội dung nhận biết rõ để trình diễn; ghi lại thời điểm INSERT, TTL được cấp và thời điểm SELECT sau khi hết hạn để có bằng chứng trong báo cáo.
+16.3. Chiến lược truy vấn nhiều ngày và phân trang
+Do log được partition theo (service_name, log_date), một truy vấn kéo dài qua nhiều ngày không nên dùng một câu CQL quét toàn bộ dữ liệu. Backend cần tách khoảng thời gian thành từng ngày, truy vấn từng partition tương ứng rồi hợp nhất kết quả theo log_time giảm dần. Cách làm này giữ đúng tư duy Query-First và tránh ALLOW FILTERING.
+Khi số lượng bản ghi tăng, API nên dùng page size hoặc paging state/cursor thay vì trả toàn bộ kết quả. Response cần kèm thông tin như items, page_size, next_cursor và has_more để Frontend tải dữ liệu theo từng phần. Trong phạm vi demo 300-500 log, việc phân trang có thể triển khai ở mức đơn giản nhưng nên được mô tả trong SRS để bảo đảm khả năng mở rộng.
+16.4. Sao lưu, phục hồi và phương án dự phòng khi demo
+Đề tài không yêu cầu xây dựng cơ chế disaster recovery hoàn chỉnh, tuy nhiên nhóm nên chuẩn bị phương án phục hồi tối thiểu để bảo đảm buổi demo. Trước khi bảo vệ cần lưu riêng các file database.cql, queries.cql, dummy_data.cql hoặc script sinh dữ liệu, cấu hình kết nối Backend và bản source code đã kiểm thử. Khi Cassandra gặp lỗi, nhóm có thể tạo lại Keyspace/Table bằng script và nạp lại dữ liệu mẫu.
+Ngoài dữ liệu chạy thật, nên chuẩn bị ảnh chụp CQLSH, nodetool status, kết quả TTL và Dashboard làm bằng chứng dự phòng. Các ảnh này chỉ hỗ trợ khi môi trường gặp sự cố, không thay thế cho demo sống nếu giảng viên yêu cầu thực hiện trực tiếp.
+16.5. Chỉ số giám sát vận hành
+Để đánh giá hệ thống, nhóm có thể theo dõi một số chỉ số cơ bản gồm: số log ghi thành công, số log ghi lỗi, thời gian phản hồi trung bình của API tra cứu, số ERROR theo Service, tỷ lệ ERROR trên tổng log và trạng thái node Cassandra. Các chỉ số này không bắt buộc phải xây dựng thành hệ thống monitoring riêng, nhưng có thể được trình bày trong Dashboard hoặc bảng kết quả kiểm thử để tăng tính thuyết phục.
+16.6. Bảo vệ dữ liệu nhạy cảm trong Audit Log
+Audit Log không được chứa mật khẩu, access token, refresh token, mã CVV, số thẻ đầy đủ hoặc dữ liệu nhạy cảm không cần thiết. Trước khi ghi log, Backend cần loại bỏ hoặc che dữ liệu nhạy cảm. Ví dụ, nếu cần ghi nhận thẻ thanh toán chỉ nên lưu dạng đã che, chẳng hạn **** **** **** 1234, và message/details chỉ chứa thông tin đủ để truy vết sự kiện.
+Các trường details cần được kiểm soát vì đây là vị trí dễ vô tình ghi toàn bộ request body. Nhóm nên áp dụng whitelist trường được phép ghi hoặc hàm sanitize trước khi insert vào Cassandra. Đây là yêu cầu bổ sung nhằm bảo đảm Audit Log hỗ trợ truy vết nhưng không trở thành nguồn rò rỉ dữ liệu.
+16.7. Tiêu chí sẵn sàng trước khi nghiệm thu
+Trước khi nghiệm thu, nhóm cần xác nhận đồng thời bốn nhóm điều kiện: (1) Cassandra và CQLSH hoạt động; (2) Backend ghi/đọc được log và CRUD Service; (3) Dashboard lọc đúng Service, Level và thời gian; (4) TTL, Dummy Data, nodetool status và các Test Case đã có bằng chứng. Nếu một chức năng chỉ có trong tài liệu nhưng chưa chạy được trên phiên bản demo thì phải ghi rõ trạng thái thay vì coi là đã hoàn thành.
+Các kết quả chưa đo được như thời gian hiệu năng thực tế, phiên bản môi trường hoặc ảnh minh chứng phải được cập nhật từ hệ thống chạy thật trước khi nộp. Không sử dụng số liệu giả để hoàn thiện báo cáo.
+CHƯƠNG 17: PHÂN CÔNG, SẢN PHẨM BÀN GIAO VÀ QUẢN LÝ THAY ĐỔI
+Chương này tổng hợp trách nhiệm theo ba vai trò được đề bài định hướng, sản phẩm cần bàn giao và nguyên tắc kiểm soát thay đổi trong quá trình nhóm hoàn thiện hệ thống. Nội dung giúp liên kết giữa đặc tả SRS, Product Backlog, phần code, phần kiểm thử và kịch bản bảo vệ.
+17.1. Phân công vai trò theo yêu cầu đề tài
+Bảng 17.1. Phân công vai trò và nội dung demo
+Vai trò
+Trách nhiệm chính
+Phần demo trọng tâm
+SV1 - Data Architect &amp; CRUD Lead
+Thiết kế Data Model Cassandra; Keyspace/Table; API tiếp nhận Audit Log; CRUD Service; Auto Audit Log.
+Thực hiện thao tác nghiệp vụ và chứng minh log phát sinh ngay trong CQLSH.
+SV2 - Advanced Query Specialist
+Thiết kế CQL theo Service/Level/Time; bảng Query-First; TTL; dữ liệu mẫu; ghi nhận kết quả truy vấn.
+INSERT log TTL 30 giây, SELECT trước/sau để chứng minh log tự hết hạn.
+SV3 - Fullstack Integrator &amp; DB Tester
+Dashboard; bộ lọc; tích hợp API; kiểm thử; nodetool status; điều phối demo.
+Lọc ERROR trên Dashboard, xem chi tiết log và trình bày trạng thái Cassandra.
+17.2. Sản phẩm bàn giao tối thiểu
+Bảng 17.2. Danh sách sản phẩm bàn giao
+Nhóm sản phẩm
+Nội dung bàn giao
+Cơ sở dữ liệu
+database.cql; queries.cql; cấu trúc Keyspace/Table; script TTL; dữ liệu mẫu 300-500 log.
+Backend/API
+Source code kết nối Cassandra; API Audit Log; CRUD Service; Auto Audit Log; validate/xử lý lỗi.
+Frontend
+Web Dashboard; bộ lọc Service/Level/Time; View Detail; Service Management.
+Kiểm thử
+Bộ Test Case; kết quả CQLSH; nodetool status; TTL; số liệu hiệu năng thực tế nếu đã đo.
+Tài liệu
+SRS; báo cáo; slide; hướng dẫn chạy; kịch bản demo; ảnh minh chứng.
+17.3. Quy trình quản lý thay đổi yêu cầu
+Mọi thay đổi ảnh hưởng đến tên trường, Partition Key, Clustering Key, endpoint API, cấu trúc response hoặc kịch bản demo phải được ghi nhận trước khi sửa code. Nhóm cần đánh giá tác động tới Data Model, Backend, Frontend, Test Case và tài liệu; sau đó cập nhật đồng bộ các phần liên quan để tránh sai lệch giữa SRS và hệ thống thực tế.
+Bảng 17.3. Quy trình quản lý thay đổi yêu cầu
+Bước
+Nội dung
+1. Ghi nhận
+Mô tả yêu cầu thay đổi, lý do và người đề xuất.
+2. Phân tích tác động
+Xác định ảnh hưởng tới Cassandra, API, giao diện, test và demo.
+3. Thống nhất
+Nhóm thống nhất phương án và mức ưu tiên trước khi triển khai.
+4. Thực hiện
+Cập nhật code/script và tài liệu cùng phiên bản.
+5. Kiểm thử lại
+Chạy các Test Case bị ảnh hưởng và cập nhật bằng chứng.
+6. Chốt phiên bản
+Cập nhật lịch sử phiên bản tài liệu và source dùng để nộp/demo.
+17.4. Tiêu chí đóng phiên bản trước khi nộp
+Phiên bản được xem là sẵn sàng nộp khi source code và tài liệu cùng phiên bản; Cassandra, Backend và Frontend chạy được; các Test Case bắt buộc đạt Pass; dữ liệu mẫu đáp ứng định mức; kịch bản TTL và Dashboard đã chạy thử; các chỗ “Chưa đo/Điền sau” đã được cập nhật nếu có dữ liệu thực tế.
+KẾT LUẬN
+Hệ thống giám sát Audit Log và lịch sử thao tác sử dụng Apache Cassandra là bài toán phù hợp để thể hiện các đặc trưng quan trọng của cơ sở dữ liệu NoSQL dạng Wide Column. Thiết kế tập trung vào Query-First, phân vùng theo Service và ngày, sắp xếp theo thời gian, sử dụng bảng chuyên biệt cho Service + Level và áp dụng TTL. Việc kết hợp Cassandra với Backend API và Web Dashboard tạo thành luồng hoàn chỉnh từ phát sinh sự kiện, ghi log, truy vấn, lọc, xem chi tiết đến kiểm thử và demo. Bản SRS này xác định rõ phạm vi, chức năng, dữ liệu, API, quy tắc nghiệp vụ, yêu cầu phi chức năng, kiểm thử, backlog và tiêu chí nghiệm thu nhằm giúp nhóm triển khai nhất quán và có căn cứ khi bảo vệ đề tài.
+PHỤ LỤC A: MẪU CQL PHỤC VỤ DEMO
+Phụ lục này tập hợp các câu lệnh CQL mẫu để nhóm chuẩn bị trước khi demo. Các giá trị ngày, service và UUID cần được thay bằng dữ liệu thực tế của môi trường chạy.
+USE audit_log_system;
+SELECT * FROM audit_logs WHERE service_name='Auth' AND log_date='2026-10-09' LIMIT 20;
+SELECT * FROM audit_logs_by_service_level WHERE service_name='Payment' AND level='ERROR' AND log_date='2026-10-09' LIMIT 20;
+INSERT INTO audit_logs (service_name, log_date, log_time, log_id, level, action, user_id, message) VALUES ('Auth', toDate(now()), toTimestamp(now()), uuid(), 'INFO', 'TTL_DEMO', 'demo', 'TTL 30 seconds') USING TTL 30;
+-- SELECT ngay sau INSERT và SELECT lại sau khi TTL kết thúc để chứng minh bản ghi tự hết hạn.
+PHỤ LỤC B: MẪU JSON API
+Các JSON dưới đây chỉ là mẫu hợp đồng dữ liệu. Khi code thực tế thay đổi tên trường hoặc cấu trúc response, nhóm phải cập nhật đồng thời SRS và API.
+{ "service_name": "Payment", "level": "ERROR", "action": "PAYMENT_FAILED", "user_id": "U001", "message": "Payment gateway timeout", "details": "{\"orderId\":\"ORD001\"}" }
+{ "success": true, "message": "Created", "data": { "log_id": "&lt;uuid&gt;" } }
+{ "success": false, "error": { "code": "INVALID_LEVEL", "message": "level chỉ nhận INFO, WARN hoặc ERROR" } }
+TÀI LIỆU THAM KHẢO
+1. Apache Cassandra Documentation - Data modeling, CQL and TTL.
+2. Apache Cassandra CQL Reference.
+3. Tài liệu phân công Đề tài 10 - Hệ thống giám sát Audit Log và lịch sử thao tác hệ thống.
+4. IEEE/ISO/IEC 29148 - Requirements Engineering (tham khảo cấu trúc đặc tả yêu cầu).
+5. Đề bài chính thức Đề tài 10 - Hệ thống giám sát Audit Log và lịch sử thao tác hệ thống (barem đánh giá, định mức Dummy Data, phân công và kịch bản demo).

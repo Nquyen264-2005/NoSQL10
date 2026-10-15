@@ -1,0 +1,43 @@
+<USER_REQUEST>
+Bây giờ KHÔNG sửa code nếu không phát hiện sai lệch thực tế.
+
+Hãy đối chiếu implementation hiện tại với tài liệu SRS.
+
+Đặc biệt kiểm tra các phần:
+
+Authentication
+Register
+Login
+Logout
+Change Password
+User Management
+ADMIN
+OPERATOR
+VIEWER
+401
+403
+JWT
+bcrypt
+Audit Log bảo mật
+
+Tạo bảng:
+
+Nội dung SRS | Implementation thật | Khớp/Không khớp | Cần sửa tài liệu/code
+
+Nếu code và SRS khác nhau:
+ưu tiên xác định implementation thật trước,
+sau đó đề xuất nội dung SRS chính xác.
+
+Không tự thêm chức năng mới ngoài phạm vi.
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-10-14T21:12:50+07:00.
+
+The user's current state is as follows:
+Active Document: d:\NoSQL10\audit-log-system\backend\tests\runTests.ts (LANGUAGE_TYPESCRIPT)
+Cursor is on line: 571
+Other open documents:
+- d:\NoSQL10\audit-log-system\backend\tests\runTests.ts (LANGUAGE_TYPESCRIPT)
+- d:\NoSQL10\audit-log-system\backend\src\controllers\auditLogController.ts (LANGUAGE_TYPESCRIPT)
+- d:\NoSQL10\audit-log-system\database\02_tables.cql (LANGUAGE_SQL)
+</ADDITIONAL_METADATA>

@@ -1,0 +1,34 @@
+# BẢNG ĐỐI CHIẾU IMPLEMENTATION THỰC TẾ VỚI TÀI LIỆU SRS
+**Tài liệu tham chiếu:** [`SRS_Nhom7_28_NguyenThiQuyen_2001230745_RaSoat_BoSungCuoi.docx`](file:///d:/NoSQL10/SRS_Nhom7_28_NguyenThiQuyen_2001230745_RaSoat_BoSungCuoi.docx)  
+**Mã nguồn tham chiếu:** `audit-log-system` (Cassandra 4.1, Node.js Express Backend, React Frontend)  
+**Trạng thái kiểm thử:** **40/40 Tests PASS (100% Green)**  
+**Nguyên tắc thực hiện:** **KHÔNG sửa code** vì implementation hiện tại đang hoạt động chính xác, an toàn và đồng nhất. Toàn bộ các điểm chưa đồng bộ sẽ được điều chỉnh ở phía **Tài liệu SRS** để phản ánh đúng hiện trạng phần mềm hoàn thiện.
+
+---
+
+## 1. BẢNG ĐỐI CHIẾU CHI TIẾT (SRS vs. IMPLEMENTATION THẬT)
+
+| STT | Phân hệ / Tiêu chí | Nội dung trong tài liệu SRS hiện tại | Implementation thật trong Source Code | Đánh giá Khớp / Không khớp | Đề xuất xử lý (Tài liệu / Code) |
+| :---: | :--- | :--- | :--- | :---: | :--- |
+| **1** | **Authentication (Kiến trúc xác thực)** | **Mục 14.5 (L1776-1778):** Đã có yêu cầu Admin đăng nhập (FR-01, UC-01) nhưng chưa cố định cơ chế xác thực ("session hoặc token"), giao cho nhóm tự quyết định theo code thực tế. | Sử dụng **Stateless JWT** (Bearer token trong Header `Authorization: Bearer <token>`). Middleware [auth.ts](file:///d:/NoSQL10/audit-log-system/backend/src/middleware/auth.ts) xác thực chữ ký và kiểm tra trạng thái tài khoản. | **Khớp về nghiệp vụ, nhưng SRS còn bỏ ngỏ cơ chế cụ thể** | **Code:** Giữ nguyên.<br>**SRS:** Cập nhật Mục 14.5 chốt cơ chế chính thức là **JWT Bearer Token** (thuật toán HS256, thời hạn 24h). |
+| **2** | **Register (Đăng ký tài khoản)** | Chưa có Use Case hoặc API riêng cho việc tự đăng ký tài khoản (chỉ có Admin đăng nhập FR-01). | Endpoint `POST /api/auth/register`
+<truncated 13123 bytes>
+ nghiệp vụ quản trị:
+- **BR-10:** Mật khẩu người dùng phải có độ dài tối thiểu 8 ký tự.
+- **BR-11:** Tên người dùng (username) không phân biệt hoa thường và không được phép trùng lặp (trả về mã 409 Conflict).
+- **BR-12:** Người dùng tự đăng ký công khai luôn được hệ thống cưỡng chế vai trò `VIEWER`.
+- **BR-13:** Quản trị viên không được phép tự xóa, tự khóa hoặc tự giáng quyền của chính mình.
+- **BR-14:** Hệ thống không cho phép xóa, khóa hoặc giáng quyền tài khoản Quản trị viên (`ADMIN`) đang hoạt động cuối cùng.
+
+---
+
+## 4. KẾT LUẬN
+
+1. **Về phía Source Code:** Không phát hiện bất kỳ sai lệch nào gây lỗi hoặc làm suy giảm chất lượng hệ thống. Toàn bộ 40 ca kiểm thử tự động, build frontend/backend, giao diện và API đều hoạt động hoàn hảo. **Giữ nguyên 100% source code hiện tại**.
+2. **Về phía Tài liệu:** Toàn bộ đặc tả kỹ thuật chi tiết đã được đồng bộ chuẩn xác trong kho tài liệu Markdown của dự án:
+   - [docs/AUTHORIZATION.md](file:///d:/NoSQL10/audit-log-system/docs/AUTHORIZATION.md) (Kiến trúc phân quyền và bảo mật chi tiết)
+   - [docs/API.md](file:///d:/NoSQL10/audit-log-system/docs/API.md) (Đặc tả 100% REST endpoints)
+   - [docs/DEMO.md](file:///d:/NoSQL10/audit-log-system/docs/DEMO.md) (Kịch bản bảo vệ chi tiết và demo 3 phút)
+   - [RELEASE_CHECKLIST.md](file:///d:/NoSQL10/audit-log-system/RELEASE_CHECKLIST.md) (Kiểm toán 20/20 hạng mục)
+   - [FINAL_RELEASE_SUMMARY.md](file:///d:/NoSQL10/audit-log-system/FINAL_RELEASE_SUMMARY.md) (Tổng kết đóng băng phiên bản)
+3. Bạn có thể sử dụng trực tiếp các mục đề xuất ở Phần 3 để cập nhật vào file Word báo cáo đồ án (`SRS_Nhom7_28_NguyenThiQuyen_2001230745_RaSoat_BoSungCuoi.docx`) mà không cần thay đổi bất kỳ dòng code nào.
